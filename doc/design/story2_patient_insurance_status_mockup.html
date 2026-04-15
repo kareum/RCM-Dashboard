@@ -1,0 +1,411 @@
+
+<style>
+  :root {
+    --font-sans: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "SF Mono", "Fira Code", monospace;
+    --color-text-primary: #1a1918;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #9e9c97;
+    --color-text-success: #27500a;
+    --color-text-danger: #791f1f;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #fdfcf8;
+    --color-border-secondary: #ddd6c5;
+    --color-border-tertiary:  #ede8db;
+    --border-radius-md: 6px;
+    --border-radius-lg: 10px;
+  }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.root { font-family: var(--font-sans); color: var(--color-text-primary); padding: 0; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.topbar h2 { font-size: 17px; font-weight: 500; margin: 0; }
+.toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.toolbar input { font-size: 13px; padding: 7px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); width: 220px; }
+.toolbar select { font-size: 13px; padding: 7px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); }
+.toolbar .count { font-size: 12px; color: var(--color-text-tertiary); margin-left: auto; }
+.tbl-wrap { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+thead th { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-align: left; padding: 10px 12px; background: var(--color-background-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); }
+tbody tr.patient-row { cursor: pointer; transition: background 0.1s; }
+tbody tr.patient-row:hover td { background: var(--color-background-secondary); }
+tbody tr.patient-row.active td { background: #E6F1FB; }
+tbody td { padding: 10px 12px; border-top: 0.5px solid var(--color-border-tertiary); vertical-align: middle; }
+.detail-row td { padding: 0; border-top: none; }
+.detail-panel { background: var(--color-background-secondary); border-top: 0.5px solid var(--color-border-tertiary); border-bottom: 0.5px solid var(--color-border-tertiary); padding: 16px 20px; display: none; }
+.detail-panel.open { display: block; }
+.patient-name { font-weight: 500; font-size: 13px; }
+.patient-dob { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+.badge { font-size: 11px; padding: 2px 7px; border-radius: var(--border-radius-md); display: inline-block; }
+.b-qmb-y { background: #FCEBEB; color: #791F1F; }
+.b-qmb-n { background: #F1EFE8; color: #444441; }
+.b-qmb-u { background: #FAEEDA; color: #633806; }
+.b-ded-met { background: #EAF3DE; color: #27500A; }
+.b-ded-not { background: #FAEEDA; color: #633806; }
+.b-ded-na { background: #F1EFE8; color: #444441; }
+.b-bill-pend { background: #E6F1FB; color: #0C447C; }
+.b-bill-paid { background: #EAF3DE; color: #27500A; }
+.b-bill-deny { background: #FCEBEB; color: #791F1F; }
+.b-bill-hold { background: #FAEEDA; color: #633806; }
+.cpt-chips { display: flex; gap: 4px; flex-wrap: wrap; }
+.cpt-chip { font-size: 11px; padding: 2px 6px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); background: var(--color-background-primary); }
+.chevron { font-size: 11px; color: var(--color-text-tertiary); transition: transform 0.15s; display: inline-block; }
+.active .chevron { transform: rotate(180deg); }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.detail-section { }
+.detail-section-label { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+.cpt-detail-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.cpt-detail-table th { font-size: 11px; color: var(--color-text-tertiary); font-weight: 400; text-align: left; padding: 0 8px 6px; }
+.cpt-detail-table td { padding: 7px 8px; border-top: 0.5px solid var(--color-border-tertiary); vertical-align: middle; }
+.ins-med { background: #E6F1FB; color: #0C447C; }
+.ins-com { background: #FAEEDA; color: #633806; }
+.detail-info-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+.detail-info-table td { padding: 5px 0; vertical-align: top; }
+.detail-info-table td:first-child { color: var(--color-text-secondary); width: 130px; }
+.status-active { color: var(--color-text-success); font-size: 11px; }
+.status-exp { color: var(--color-text-danger); font-size: 11px; }
+
+/* ── COLOR SIMULATOR ── */
+#color-sim {
+  position: fixed; top: 12px; right: 12px; z-index: 999;
+  background: white; border: 0.5px solid #ddd6c5;
+  border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  font-family: var(--font-sans); font-size: 12px;
+  width: 240px; overflow: hidden;
+}
+#sim-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: #fdfcf8;
+  border-bottom: 0.5px solid #ede8db; cursor: pointer; user-select: none;
+}
+#sim-header span { font-weight: 600; font-size: 12px; color: #5f5e5a; letter-spacing: 0.03em; }
+#sim-toggle { font-size: 11px; color: #9e9c97; }
+#sim-body { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.sim-row { display: flex; flex-direction: column; gap: 5px; }
+.sim-label { font-size: 11px; color: #9e9c97; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+.sim-control { display: flex; align-items: center; gap: 8px; }
+.sim-control input[type="color"] {
+  width: 32px; height: 32px; border: 0.5px solid #ddd6c5;
+  border-radius: 6px; cursor: pointer; padding: 2px; background: white;
+}
+.sim-control input[type="text"] {
+  flex: 1; font-size: 12px; padding: 5px 8px;
+  border: 0.5px solid #ddd6c5; border-radius: 6px;
+  font-family: "SF Mono", monospace; color: #1a1918;
+  background: #fdfcf8;
+}
+.sim-divider { height: 0.5px; background: #ede8db; }
+.sim-reset {
+  font-size: 11px; color: #5f5e5a; background: none; border: none;
+  cursor: pointer; text-align: left; padding: 0; font-family: var(--font-sans);
+}
+.sim-reset:hover { text-decoration: underline; }
+.sim-copy {
+  font-size: 11px; padding: 5px 10px; border-radius: 6px;
+  border: 0.5px solid #ddd6c5; background: #fdfcf8;
+  color: #5f5e5a; cursor: pointer; width: 100%;
+  font-family: var(--font-sans);
+}
+.sim-copy:hover { background: #f0ede4; }
+</style>
+
+<!-- ── COLOR SIMULATOR PANEL ── -->
+<div id="color-sim">
+  <div id="sim-header" onclick="toggleSim()">
+    <span>🎨 Color Simulator</span>
+    <span id="sim-toggle">▾</span>
+  </div>
+  <div id="sim-body">
+    <div class="sim-row">
+      <div class="sim-label">배경색 (background)</div>
+      <div class="sim-control">
+        <input type="color" id="pick-bg"    value="#fdfcf8" oninput="applyBg(this.value)"/>
+        <input type="text"  id="text-bg"    value="#fdfcf8" oninput="applyBg(this.value)" maxlength="7"/>
+      </div>
+    </div>
+    <div class="sim-row">
+      <div class="sim-label">테이블 헤더 배경</div>
+      <div class="sim-control">
+        <input type="color" id="pick-thead" value="#fdfcf8" oninput="applyThead(this.value)"/>
+        <input type="text"  id="text-thead" value="#fdfcf8" oninput="applyThead(this.value)" maxlength="7"/>
+      </div>
+    </div>
+    <div class="sim-row">
+      <div class="sim-label">섹션 레이블 색</div>
+      <div class="sim-control">
+        <input type="color" id="pick-label" value="#5f5e5a" oninput="applyLabel(this.value)"/>
+        <input type="text"  id="text-label" value="#5f5e5a" oninput="applyLabel(this.value)" maxlength="7"/>
+      </div>
+    </div>
+    <div class="sim-divider"></div>
+    <button class="sim-reset" onclick="resetColors()">↺ 기본값으로 초기화</button>
+    <button class="sim-copy"  onclick="copyValues()">현재 색상값 복사</button>
+  </div>
+</div>
+
+<div class="root">
+  <div class="topbar">
+    <h2>Patient insurance status</h2>
+  </div>
+
+  <div class="toolbar">
+    <select id="clinic-filter" onchange="renderTable()">
+      <option value="">All clinics</option>
+      <option value="Sunrise Health Center">Sunrise Health Center</option>
+      <option value="Westside Clinic">Westside Clinic</option>
+      <option value="Lakeview Medical">Lakeview Medical</option>
+      <option value="Pacific Care Group">Pacific Care Group</option>
+    </select>
+    <select id="qmb-filter" onchange="renderTable()">
+      <option value="">QMB: All</option>
+      <option value="Yes">QMB: Yes</option>
+      <option value="No">QMB: No</option>
+      <option value="Unknown">QMB: Unknown</option>
+    </select>
+    <select id="bill-filter" onchange="renderTable()">
+      <option value="">Billing: All</option>
+      <option value="Pending">Pending</option>
+      <option value="Paid">Paid</option>
+      <option value="Denied">Denied</option>
+      <option value="Hold">Hold</option>
+    </select>
+    <input type="text" placeholder="Search patient name or Medicare ID..." id="search-input" oninput="renderTable()"/>
+    <span class="count" id="count-label"></span>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:28px"></th>
+          <th style="width:160px">Patient</th>
+          <th style="width:130px">Medicare ID</th>
+          <th style="width:80px">QMB</th>
+          <th style="width:110px">Deductible</th>
+          <th style="width:130px">CPT codes</th>
+          <th style="width:100px">Billing status</th>
+        </tr>
+      </thead>
+      <tbody id="patient-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const patients = [
+  { id:1, name:"Margaret Collins", dob:"1948-03-12", medicareId:"1EG4-TE5-MK72", clinic:"Sunrise Health Center",
+    qmb:"Yes", deductible:"Met", billingStatus:"Hold",
+    services:["RPM","CCM"],
+    cpts:[
+      {code:"99453",desc:"RPM setup",ins:"Medicare",rate:19,startDate:"2024-01-05",endDate:null,status:"Active"},
+      {code:"99454",desc:"RPM device supply",ins:"Medicare",rate:55,startDate:"2024-01-05",endDate:null,status:"Active"},
+      {code:"99490",desc:"CCM 20 min",ins:"Medicare",rate:67,startDate:"2024-02-01",endDate:null,status:"Active"},
+    ]
+  },
+  { id:2, name:"Robert Nguyen", dob:"1952-07-28", medicareId:"2WX9-AB3-LP41", clinic:"Sunrise Health Center",
+    qmb:"No", deductible:"Not met", billingStatus:"Pending",
+    services:["RPM"],
+    cpts:[
+      {code:"99457",desc:"RPM mgmt 20 min",ins:"Medicare",rate:48,startDate:"2024-03-01",endDate:null,status:"Active"},
+      {code:"99458",desc:"RPM mgmt add-on",ins:"Medicare",rate:39,startDate:"2024-03-01",endDate:null,status:"Active"},
+    ]
+  },
+  { id:3, name:"Dorothy Simmons", dob:"1945-11-03", medicareId:"3RT2-CV7-NQ88", clinic:"Westside Clinic",
+    qmb:"Unknown", deductible:"N/A", billingStatus:"Pending",
+    services:["CCM"],
+    cpts:[
+      {code:"99490",desc:"CCM 20 min",ins:"Commercial",rate:62,startDate:"2023-06-01",endDate:"2023-12-31",status:"Expired"},
+      {code:"99490",desc:"CCM 20 min",ins:"Commercial",rate:70,startDate:"2024-01-01",endDate:null,status:"Active"},
+      {code:"99439",desc:"CCM add-on 20 min",ins:"Commercial",rate:47,startDate:"2024-01-01",endDate:null,status:"Active"},
+    ]
+  },
+  { id:4, name:"James Watkins", dob:"1938-05-16", medicareId:"4MN5-GH1-SR63", clinic:"Westside Clinic",
+    qmb:"Yes", deductible:"Met", billingStatus:"Paid",
+    services:["RPM","CCM"],
+    cpts:[
+      {code:"99453",desc:"RPM setup",ins:"Medicare",rate:19,startDate:"2024-01-10",endDate:null,status:"Active"},
+      {code:"99454",desc:"RPM device supply",ins:"Medicare",rate:55,startDate:"2024-01-10",endDate:null,status:"Active"},
+      {code:"99490",desc:"CCM 20 min",ins:"Medicare",rate:67,startDate:"2024-01-10",endDate:null,status:"Active"},
+    ]
+  },
+  { id:5, name:"Patricia Lawson", dob:"1955-09-22", medicareId:"5YK8-JL4-DP27", clinic:"Lakeview Medical",
+    qmb:"No", deductible:"Not met", billingStatus:"Denied",
+    services:["RPM"],
+    cpts:[
+      {code:"99454",desc:"RPM device supply",ins:"Medicare",rate:55,startDate:"2024-02-15",endDate:null,status:"Active"},
+      {code:"99457",desc:"RPM mgmt 20 min",ins:"Medicare",rate:48,startDate:"2024-02-15",endDate:null,status:"Active"},
+    ]
+  },
+  { id:6, name:"Harold Freeman", dob:"1943-01-30", medicareId:"6QZ3-PW9-UM54", clinic:"Lakeview Medical",
+    qmb:"Yes", deductible:"Met", billingStatus:"Pending",
+    services:["CCM"],
+    cpts:[
+      {code:"99439",desc:"CCM add-on 20 min",ins:"Medicare",rate:47,startDate:"2024-03-01",endDate:null,status:"Active"},
+    ]
+  },
+  { id:7, name:"Barbara Chen", dob:"1960-04-08", medicareId:"7BF6-KT2-HV39", clinic:"Pacific Care Group",
+    qmb:"No", deductible:"Met", billingStatus:"Paid",
+    services:["RPM","CCM"],
+    cpts:[
+      {code:"99453",desc:"RPM setup",ins:"Medicare",rate:19,startDate:"2024-01-20",endDate:null,status:"Active"},
+      {code:"99490",desc:"CCM 20 min",ins:"Medicare",rate:67,startDate:"2024-01-20",endDate:null,status:"Active"},
+      {code:"99439",desc:"CCM add-on 20 min",ins:"Medicare",rate:47,startDate:"2024-01-20",endDate:null,status:"Active"},
+    ]
+  },
+];
+
+let openId = null;
+
+function qmbBadge(v) {
+  if(v==="Yes") return `<span class="badge b-qmb-y">QMB Yes</span>`;
+  if(v==="No")  return `<span class="badge b-qmb-n">QMB No</span>`;
+  return `<span class="badge b-qmb-u">Unknown</span>`;
+}
+function dedBadge(v) {
+  if(v==="Met")     return `<span class="badge b-ded-met">Met</span>`;
+  if(v==="Not met") return `<span class="badge b-ded-not">Not met</span>`;
+  return `<span class="badge b-ded-na">N/A</span>`;
+}
+function billBadge(v) {
+  if(v==="Pending") return `<span class="badge b-bill-pend">Pending</span>`;
+  if(v==="Paid")    return `<span class="badge b-bill-paid">Paid</span>`;
+  if(v==="Denied")  return `<span class="badge b-bill-deny">Denied</span>`;
+  return `<span class="badge b-bill-hold">Hold</span>`;
+}
+
+function renderTable() {
+  const clinic = document.getElementById('clinic-filter').value;
+  const qmb    = document.getElementById('qmb-filter').value;
+  const bill   = document.getElementById('bill-filter').value;
+  const search = document.getElementById('search-input').value.toLowerCase();
+
+  const filtered = patients.filter(p => {
+    if(clinic && p.clinic !== clinic) return false;
+    if(qmb    && p.qmb !== qmb)     return false;
+    if(bill   && p.billingStatus !== bill) return false;
+    if(search && !p.name.toLowerCase().includes(search) && !p.medicareId.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  document.getElementById('count-label').textContent = `${filtered.length} patients`;
+  const tbody = document.getElementById('patient-tbody');
+  tbody.innerHTML = '';
+
+  filtered.forEach(p => {
+    const isOpen = openId === p.id;
+    const cptChips = [...new Set(p.cpts.map(c=>c.code))].map(c=>`<span class="cpt-chip">${c}</span>`).join('');
+
+    const tr = document.createElement('tr');
+    tr.className = 'patient-row' + (isOpen ? ' active' : '');
+    tr.innerHTML = `
+      <td style="text-align:center"><span class="chevron ${isOpen?'active':''}">▾</span></td>
+      <td><div class="patient-name">${p.name}</div><div class="patient-dob">DOB: ${p.dob}</div></td>
+      <td style="font-size:12px;color:var(--color-text-secondary);font-family:var(--font-mono)">${p.medicareId}</td>
+      <td>${qmbBadge(p.qmb)}</td>
+      <td>${dedBadge(p.deductible)}</td>
+      <td><div class="cpt-chips">${cptChips}</div></td>
+      <td>${billBadge(p.billingStatus)}</td>
+    `;
+    tr.onclick = () => { openId = (openId === p.id) ? null : p.id; renderTable(); };
+    tbody.appendChild(tr);
+
+    const detailTr = document.createElement('tr');
+    detailTr.className = 'detail-row';
+    const cptRows = p.cpts.map(c => `
+      <tr>
+        <td style="font-weight:500">${c.code}</td>
+        <td style="color:var(--color-text-secondary)">${c.desc}</td>
+        <td><span class="badge ${c.ins==='Medicare'?'ins-med':'ins-com'}">${c.ins}</span></td>
+        <td style="font-weight:500">$${c.rate.toFixed(2)}</td>
+        <td>${c.startDate}</td>
+        <td>${c.endDate || '—'}</td>
+        <td><span class="${c.status==='Active'?'status-active':'status-exp'}">${c.status}</span></td>
+      </tr>`).join('');
+
+    detailTr.innerHTML = `<td colspan="7">
+      <div class="detail-panel ${isOpen?'open':''}">
+        <div class="detail-grid">
+          <div class="detail-section">
+            <div class="detail-section-label">Patient info</div>
+            <table class="detail-info-table">
+              <tr><td>Clinic</td><td>${p.clinic}</td></tr>
+              <tr><td>Medicare ID</td><td style="font-family:var(--font-mono);font-size:12px">${p.medicareId}</td></tr>
+              <tr><td>Date of birth</td><td>${p.dob}</td></tr>
+              <tr><td>Service type</td><td>${p.services.join(', ')}</td></tr>
+              <tr><td>QMB status</td><td>${qmbBadge(p.qmb)}</td></tr>
+              <tr><td>Deductible</td><td>${dedBadge(p.deductible)}</td></tr>
+              <tr><td>Billing status</td><td>${billBadge(p.billingStatus)}</td></tr>
+            </table>
+          </div>
+          <div class="detail-section">
+            <div class="detail-section-label">CPT codes & rates</div>
+            <table class="cpt-detail-table">
+              <thead><tr>
+                <th>Code</th><th>Description</th><th>Insurance</th><th>Rate</th><th>Start</th><th>End</th><th>Status</th>
+              </tr></thead>
+              <tbody>${cptRows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </td>`;
+    tbody.appendChild(detailTr);
+  });
+}
+
+renderTable();
+</script>
+
+<script>
+/* ── COLOR SIMULATOR ── */
+const DEFAULTS = {
+  bg:    '#fdfcf8',
+  thead: '#fdfcf8',
+  label: '#5f5e5a',
+};
+
+function applyBg(val) {
+  if (!/^#[0-9a-fA-F]{6}$/.test(val)) return;
+  document.documentElement.style.setProperty('--color-background-secondary', val);
+  document.body.style.background = val;
+  sync('bg', val);
+}
+function applyThead(val) {
+  if (!/^#[0-9a-fA-F]{6}$/.test(val)) return;
+  document.querySelectorAll('thead th').forEach(el => el.style.background = val);
+  document.querySelectorAll('.detail-panel').forEach(el => el.style.background = val);
+  sync('thead', val);
+}
+function applyLabel(val) {
+  if (!/^#[0-9a-fA-F]{6}$/.test(val)) return;
+  document.querySelectorAll('.detail-section-label').forEach(el => el.style.color = val);
+  sync('label', val);
+}
+function sync(key, val) {
+  document.getElementById('pick-' + key).value = val;
+  document.getElementById('text-' + key).value = val;
+}
+function toggleSim() {
+  const body = document.getElementById('sim-body');
+  const tog  = document.getElementById('sim-toggle');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'flex';
+  tog.textContent = open ? '▸' : '▾';
+}
+function resetColors() {
+  applyBg(DEFAULTS.bg);
+  applyThead(DEFAULTS.thead);
+  applyLabel(DEFAULTS.label);
+}
+function copyValues() {
+  const txt =
+    `배경색: ${document.getElementById('text-bg').value}\n` +
+    `테이블 헤더 배경: ${document.getElementById('text-thead').value}\n` +
+    `섹션 레이블 색: ${document.getElementById('text-label').value}`;
+  navigator.clipboard.writeText(txt).then(() => {
+    const btn = document.querySelector('.sim-copy');
+    btn.textContent = '✓ 복사됨';
+    setTimeout(() => btn.textContent = '현재 색상값 복사', 1500);
+  });
+}
+</script>

@@ -1,0 +1,524 @@
+
+<style>
+  :root {
+    --font-sans: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "SF Mono", "Fira Code", monospace;
+    --color-text-primary: #1a1918;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #9e9c97;
+    --color-text-success: #27500a;
+    --color-text-danger: #791f1f;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #fdfcf8;
+    --color-border-secondary: #ddd6c5;
+    --color-border-tertiary:  #ede8db;
+    --border-radius-md: 6px;
+    --border-radius-lg: 10px;
+  }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.root { font-family: var(--font-sans); color: var(--color-text-primary); }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+.topbar h2 { font-size: 17px; font-weight: 500; }
+.month-nav { display: flex; align-items: center; gap: 6px; }
+.month-nav button { background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 4px 10px; cursor: pointer; color: var(--color-text-secondary); font-size: 13px; }
+.month-nav span { font-weight: 500; min-width: 96px; text-align: center; font-size: 14px; }
+.tabs { display: flex; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 20px; }
+.tab { font-size: 13px; padding: 9px 20px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--color-text-secondary); background: none; border-top: none; border-left: none; border-right: none; transition: all 0.15s; }
+.tab.active { color: var(--color-text-primary); border-bottom-color: #185FA5; font-weight: 500; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.badge { font-size: 11px; padding: 2px 7px; border-radius: var(--border-radius-md); display: inline-block; white-space: nowrap; }
+.b-unpaid   { background: #E6F1FB; color: #0C447C; }
+.b-partial  { background: #FAEEDA; color: #633806; }
+.b-paid     { background: #EAF3DE; color: #27500A; }
+.b-settled  { background: #E1F5EE; color: #085041; }
+.b-void     { background: #FCEBEB; color: #791F1F; }
+.b-reissue  { background: #FAEEDA; color: #633806; border: 0.5px dashed #BA7517; }
+.b-era-y    { background: #EAF3DE; color: #27500A; }
+.b-era-n    { background: #F1EFE8; color: #5F5E5A; }
+
+.sum-grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+.sum-grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+.sc { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 14px; }
+.sc-lbl { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 5px; }
+.sc-val { font-size: 22px; font-weight: 500; }
+.sc-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 3px; }
+.rate-bar-wrap { margin-top: 8px; }
+.rate-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; }
+.rb-settled { background: #1D9E75; }
+.rb-paid    { background: #639922; }
+.rb-partial { background: #EF9F27; }
+.rb-unpaid  { background: #E8E7E1; }
+.rate-legend { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+.rl { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--color-text-secondary); }
+.rl-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+.toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.toolbar select, .toolbar input { font-size: 13px; padding: 6px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); }
+.toolbar input { width: 185px; }
+.tbtn { font-size: 12px; padding: 6px 12px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); cursor: pointer; white-space: nowrap; }
+.tbtn-primary { border-color: #185FA5; background: #E6F1FB; color: #0C447C; font-weight: 500; }
+.tcount { font-size: 12px; color: var(--color-text-tertiary); margin-left: auto; }
+
+.body { display: flex; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; min-height: 380px; }
+.list-pane { flex: 1; min-width: 0; overflow-x: auto; }
+.side-pane { width: 0; overflow: hidden; border-left: 0.5px solid var(--color-border-tertiary); transition: width 0.2s; background: var(--color-background-primary); flex-shrink: 0; }
+.side-pane.open { width: 420px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+thead th { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-align: left; padding: 9px 10px; background: var(--color-background-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+tbody tr.inv-row { cursor: pointer; transition: background 0.1s; }
+tbody tr.inv-row:hover td { background: var(--color-background-secondary); }
+tbody tr.inv-row.active td { background: #E6F1FB; }
+tbody tr.inv-row.voided td { opacity: 0.5; }
+tbody tr.pt-row td { padding: 7px 10px 7px 26px; border-top: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); font-size: 12px; cursor: pointer; }
+tbody tr.pt-row:hover td { filter: brightness(0.97); }
+tbody tr.pt-row.pt-open td { background: #EAF3DE20; }
+tbody tr.cpt-row td { padding: 5px 10px 5px 44px; border-top: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary); font-size: 11px; }
+tbody td { padding: 9px 10px; border-top: 0.5px solid var(--color-border-tertiary); vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exp-icon { display: inline-block; font-size: 9px; color: var(--color-text-tertiary); transition: transform 0.15s; margin-right: 3px; }
+.exp-open { transform: rotate(90deg); }
+
+.sp-hdr { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); }
+.sp-hdr h3 { font-size: 13px; font-weight: 500; }
+.sp-x { font-size: 15px; color: var(--color-text-tertiary); cursor: pointer; background: none; border: none; padding: 2px 6px; }
+.sp-body { padding: 14px; overflow-y: auto; max-height: 640px; }
+.sp-sec { margin-bottom: 16px; }
+.sp-lbl { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.info-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.info-tbl td { padding: 4px 0; }
+.info-tbl td:first-child { color: var(--color-text-secondary); width: 115px; }
+.pt-sum-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pt-sum-tbl th { font-size: 11px; color: var(--color-text-tertiary); font-weight: 400; text-align: left; padding: 0 7px 6px; }
+.pt-sum-tbl td { padding: 6px 7px; border-top: 0.5px solid var(--color-border-tertiary); }
+.pt-sum-tbl tfoot td { font-weight: 500; border-top: 1px solid var(--color-border-secondary); }
+.sp-btn { width: 100%; font-size: 12px; padding: 8px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); cursor: pointer; margin-bottom: 6px; text-align: left; }
+.sp-btn-primary { border-color: #185FA5; background: #E6F1FB; color: #0C447C; font-weight: 500; }
+.sp-btn-danger  { border-color: #F09595; background: #FCEBEB; color: #791F1F; }
+.sp-btn-amber   { border-color: #EF9F27; background: #FAEEDA; color: #633806; font-weight: 500; }
+.notice-reissue { background: #FAEEDA; border-radius: var(--border-radius-md); padding: 9px 12px; font-size: 12px; color: #633806; margin-bottom: 10px; border: 0.5px dashed #BA7517; }
+.notice-settled { background: #E1F5EE; border-radius: var(--border-radius-md); padding: 9px 12px; font-size: 12px; color: #085041; margin-bottom: 10px; }
+.pay-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 6px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.pay-row:last-child { border-bottom: none; }
+.pay-left { color: var(--color-text-secondary); }
+.pay-ref  { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-tertiary); }
+.pay-amt  { font-weight: 500; }
+.pay-inp-row { display: flex; gap: 7px; align-items: flex-end; margin-top: 10px; flex-wrap: wrap; }
+.pay-inp-row input, .pay-inp-row select { font-size: 13px; padding: 7px 9px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); }
+.pay-inp-row input[type=number] { width: 88px; }
+.pay-inp-row input[type=text]   { width: 82px; }
+.pay-add { font-size: 12px; padding: 7px 12px; border-radius: var(--border-radius-md); border: 0.5px solid #185FA5; background: #E6F1FB; color: #0C447C; cursor: pointer; font-weight: 500; white-space: nowrap; }
+.split-pills { display: flex; gap: 6px; }
+.sp-clinic { background: #E6F1FB; color: #0C447C; font-size: 11px; padding: 2px 8px; border-radius: var(--border-radius-md); }
+.sp-hicare { background: #E1F5EE; color: #085041; font-size: 11px; padding: 2px 8px; border-radius: var(--border-radius-md); }
+
+.upload-zone { border: 1.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 28px; text-align: center; margin-bottom: 16px; background: var(--color-background-secondary); cursor: pointer; transition: all 0.15s; }
+.upload-zone:hover { border-color: #185FA5; background: #E6F1FB20; }
+.eob-history-wrap { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; margin-bottom: 16px; }
+.eob-hdr-row { display: flex; padding: 9px 12px; background: var(--color-background-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 11px; font-weight: 500; color: var(--color-text-secondary); }
+.eob-file-row { display: flex; align-items: center; padding: 9px 12px; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 12px; gap: 0; }
+.eob-file-row:last-child { border-bottom: none; }
+.unmatched-wrap { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+.b-orig    { background: #E6F1FB; color: #0C447C; font-size: 10px; padding: 1px 7px; border-radius: 10px; }
+.b-reiss   { background: #FAEEDA; color: #633806; font-size: 10px; padding: 1px 7px; border-radius: 10px; border: 0.5px dashed #BA7517; }
+.b-proc    { background: #FAEEDA; color: #633806; }
+.b-comp    { background: #EAF3DE; color: #27500A; }
+.match-sel { font-size: 12px; padding: 5px 8px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); max-width: 160px; }
+.match-btn { font-size: 11px; padding: 4px 10px; border-radius: var(--border-radius-md); border: 0.5px solid #185FA5; background: #E6F1FB; color: #0C447C; cursor: pointer; white-space: nowrap; margin-left: 6px; }
+
+.pay-log-wrap { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; margin-bottom: 16px; }
+.rec-pay-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 16px 18px; }
+</style>
+
+<div class="root">
+  <div class="topbar">
+    <h2>Invoice & payment management</h2>
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">‹</button>
+      <span id="month-lbl">March 2025</span>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('invoices')">Invoices</button>
+    <button class="tab" onclick="switchTab('payments')">Payments</button>
+    <button class="tab" onclick="switchTab('eob')">EOB upload & matching</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-invoices">
+    <div class="sum-grid4">
+      <div class="sc"><div class="sc-lbl">Total invoiced</div><div class="sc-val" id="s-total">$0</div><div class="sc-sub" id="s-inv-sub"></div></div>
+      <div class="sc"><div class="sc-lbl">Collected</div><div class="sc-val" id="s-coll">$0</div><div class="sc-sub" id="s-coll-sub"></div></div>
+      <div class="sc"><div class="sc-lbl">Outstanding</div><div class="sc-val" style="color:#791F1F" id="s-out">$0</div><div class="sc-sub" id="s-out-sub"></div></div>
+      <div class="sc">
+        <div class="sc-lbl">수금 현황</div>
+        <div class="rate-bar-wrap">
+          <div class="rate-bar" id="rate-bar"></div>
+          <div class="rate-legend">
+            <div class="rl"><div class="rl-dot" style="background:#1D9E75"></div>Settled</div>
+            <div class="rl"><div class="rl-dot" style="background:#639922"></div>Paid</div>
+            <div class="rl"><div class="rl-dot" style="background:#EF9F27"></div>Partial</div>
+            <div class="rl"><div class="rl-dot" style="background:#E8E7E1"></div>Unpaid</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <select id="f-status" onchange="renderInvoices()">
+        <option value="">Status: All</option>
+        <option value="Unpaid">Unpaid</option>
+        <option value="Partial">Partial</option>
+        <option value="Paid">Paid</option>
+        <option value="Settled">Settled</option>
+        <option value="Reissue">Reissue pending</option>
+        <option value="Void">Void</option>
+      </select>
+      <input type="text" id="f-search" placeholder="Search clinic or invoice ID..." oninput="renderInvoices()"/>
+      <button class="tbtn tbtn-primary">+ Generate invoices</button>
+      <span class="tcount" id="inv-count"></span>
+    </div>
+
+    <div class="body">
+      <div class="list-pane">
+        <table>
+          <thead><tr>
+            <th style="width:96px">Invoice ID</th>
+            <th style="width:160px">Clinic</th>
+            <th style="width:58px">Patients</th>
+            <th style="width:56px">Claims</th>
+            <th style="width:90px">Total billed</th>
+            <th style="width:90px">Invoice amt.</th>
+            <th style="width:76px">Paid</th>
+            <th style="width:72px">Balance</th>
+            <th style="width:96px">Status</th>
+            <th style="width:82px">Due date</th>
+          </tr></thead>
+          <tbody id="inv-tbody"></tbody>
+        </table>
+      </div>
+      <div class="side-pane" id="inv-side">
+        <div class="sp-hdr">
+          <h3 id="sp-title">Invoice detail</h3>
+          <button class="sp-x" onclick="closePanel()">✕</button>
+        </div>
+        <div class="sp-body" id="sp-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-payments">
+    <div class="sum-grid3">
+      <div class="sc"><div class="sc-lbl">Total received (this month)</div><div class="sc-val" id="p-total">$0</div><div class="sc-sub" id="p-sub"></div></div>
+      <div class="sc"><div class="sc-lbl">Pending collection</div><div class="sc-val" style="color:#791F1F" id="p-pend">$0</div><div class="sc-sub" id="p-pend-sub"></div></div>
+      <div class="sc"><div class="sc-lbl">Fully settled</div><div class="sc-val" style="color:#27500A" id="p-settled">0</div><div class="sc-sub">invoices this month</div></div>
+    </div>
+    <div class="toolbar">
+      <select><option>Clinic: All</option><option>Sunrise Health Center</option><option>Westside Clinic</option><option>Lakeview Medical</option><option>Pacific Care Group</option></select>
+      <input type="text" placeholder="Search clinic or ref no..." style="width:185px;font-size:13px;padding:6px 10px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);"/>
+      <span class="tcount" style="margin-left:auto" id="pay-count"></span>
+    </div>
+    <div class="pay-log-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:90px">Date</th>
+          <th style="width:96px">Invoice ID</th>
+          <th style="width:155px">Clinic</th>
+          <th style="width:80px">Method</th>
+          <th style="width:120px">Ref no.</th>
+          <th style="width:88px">Amount</th>
+          <th style="width:96px">Status</th>
+          <th style="width:80px">Action</th>
+        </tr></thead>
+        <tbody id="pay-tbody"></tbody>
+      </table>
+    </div>
+    <div class="rec-pay-card">
+      <div style="font-size:12px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px">Record new payment</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:flex-end;">
+        <div style="display:flex;flex-direction:column;gap:5px"><label style="font-size:11px;color:var(--color-text-secondary)">Invoice ID</label><input type="text" style="font-size:13px;padding:7px 9px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);" placeholder="INV-XXXX"/></div>
+        <div style="display:flex;flex-direction:column;gap:5px"><label style="font-size:11px;color:var(--color-text-secondary)">Amount</label><input type="number" style="font-size:13px;padding:7px 9px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);" placeholder="0.00"/></div>
+        <div style="display:flex;flex-direction:column;gap:5px"><label style="font-size:11px;color:var(--color-text-secondary)">Method</label><select style="font-size:13px;padding:7px 9px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);"><option>ACH</option><option>Check</option><option>Wire</option></select></div>
+        <div style="display:flex;flex-direction:column;gap:5px"><label style="font-size:11px;color:var(--color-text-secondary)">Ref no.</label><input type="text" style="font-size:13px;padding:7px 9px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:var(--color-background-primary);color:var(--color-text-primary);" placeholder="ACH-XXXX"/></div>
+        <button onclick="alert('Payment recorded')" style="font-size:13px;padding:7px 18px;border-radius:var(--border-radius-md);border:0.5px solid #185FA5;background:#E6F1FB;color:#0C447C;cursor:pointer;font-weight:500;white-space:nowrap;">+ Record</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-eob">
+    <div class="upload-zone" onclick="alert('EOB PDF upload — Medicare ID 기준 자동 매칭 시작')">
+      <div style="font-size:22px;margin-bottom:8px;color:var(--color-text-tertiary)">↑</div>
+      <div style="font-size:14px;font-weight:500;margin-bottom:4px;">Drop EOB PDF here or click to upload</div>
+      <div style="font-size:12px;color:var(--color-text-tertiary);">Medicare ID 기준 자동 매칭 · 재발행 감지 시 기존 Invoice 자동 Void 처리</div>
+    </div>
+    <div class="sum-grid3">
+      <div class="sc"><div class="sc-lbl">Uploaded this month</div><div class="sc-val">3</div><div class="sc-sub">EOB files</div></div>
+      <div class="sc"><div class="sc-lbl">Auto-matched</div><div class="sc-val" style="color:#27500A">18</div><div class="sc-sub">claims matched</div></div>
+      <div class="sc"><div class="sc-lbl">Unmatched</div><div class="sc-val" style="color:#791F1F" id="unmatched-cnt">2</div><div class="sc-sub">manual review needed</div></div>
+    </div>
+    <div class="eob-history-wrap">
+      <div class="eob-hdr-row">
+        <span style="flex:1">File name</span>
+        <span style="width:90px">Uploaded</span>
+        <span style="width:80px">Matched</span>
+        <span style="width:90px">Type</span>
+        <span style="width:80px">Status</span>
+      </div>
+      <div class="eob-file-row">
+        <span style="flex:1;font-family:var(--font-mono);font-size:11px;color:var(--color-text-secondary)">EOB_Medicare_Mar2025_batch1.pdf</span>
+        <span style="width:90px;color:var(--color-text-tertiary)">2025-03-20</span>
+        <span style="width:80px">16 / 18</span>
+        <span style="width:90px"><span class="b-orig">Original</span></span>
+        <span style="width:80px"><span class="badge b-proc">Processing</span></span>
+      </div>
+      <div class="eob-file-row">
+        <span style="flex:1;font-family:var(--font-mono);font-size:11px;color:var(--color-text-secondary)">EOB_Medicare_Jan2025_reissued.pdf</span>
+        <span style="width:90px;color:var(--color-text-tertiary)">2025-03-18</span>
+        <span style="width:80px">3 / 3</span>
+        <span style="width:90px"><span class="b-reiss">Reissued</span></span>
+        <span style="width:80px"><span class="badge b-comp">Complete</span></span>
+      </div>
+      <div class="eob-file-row">
+        <span style="flex:1;font-family:var(--font-mono);font-size:11px;color:var(--color-text-secondary)">EOB_Commercial_Mar2025.pdf</span>
+        <span style="width:90px;color:var(--color-text-tertiary)">2025-03-19</span>
+        <span style="width:80px">5 / 5</span>
+        <span style="width:90px"><span class="b-orig">Original</span></span>
+        <span style="width:80px"><span class="badge b-comp">Complete</span></span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:500">Unmatched — manual review</div>
+      <span style="font-size:12px;color:var(--color-text-tertiary)" id="unmatched-lbl">2 items</span>
+    </div>
+    <div class="unmatched-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:130px">Medicare ID (EOB)</th>
+          <th style="width:110px">Patient (EOB)</th>
+          <th style="width:60px">CPT</th>
+          <th style="width:70px">Amount</th>
+          <th>Match to claim</th>
+          <th style="width:64px"></th>
+        </tr></thead>
+        <tbody id="unmatched-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const MONTHS=["January 2025","February 2025","March 2025","April 2025"];
+let monthIdx=2;
+let selId=null, expInv=new Set(), expPt=new Set();
+
+const invoices=[
+  {id:"INV-2503-01",clinic:"Sunrise Health Center",month:"2025-03",split:{c:50,h:50},status:"Unpaid",dueDate:"2025-04-15",payments:[],
+   patients:[
+     {name:"Margaret Collins",insId:"1EG4-TE5-MK72",claimId:"CLM-0310",cpts:[{code:"99453",billed:19,paid:0},{code:"99454",billed:55,paid:0},{code:"99457",billed:48,paid:0},{code:"99458",billed:39,paid:0},{code:"99490",billed:67,paid:0},{code:"99439",billed:47,paid:0}]},
+     {name:"Robert Nguyen",insId:"2WX9-AB3-LP41",claimId:"CLM-0311",cpts:[{code:"99457",billed:48,paid:30},{code:"99458",billed:39,paid:0}]},
+   ]},
+  {id:"INV-2503-02",clinic:"Westside Clinic",month:"2025-03",split:{c:60,h:40},status:"Reissue",dueDate:"2025-04-15",payments:[],reissueNote:"EOB 재발행 — 금액 변경 ($258 → $234)",
+   patients:[
+     {name:"Dorothy Simmons",insId:"3RT2-CV7-NQ88",claimId:"CLM-0312",cpts:[{code:"99490",billed:70,paid:0},{code:"99439",billed:47,paid:0}]},
+     {name:"James Watkins",insId:"4MN5-GH1-SR63",claimId:"CLM-0313",cpts:[{code:"99453",billed:19,paid:19},{code:"99454",billed:55,paid:55},{code:"99490",billed:67,paid:67}]},
+   ]},
+  {id:"INV-2503-03",clinic:"Lakeview Medical",month:"2025-03",split:{c:50,h:50},status:"Settled",dueDate:"2025-04-15",payments:[{date:"2025-04-02",amount:115,method:"ACH",ref:"ACH-5501"}],
+   patients:[
+     {name:"Patricia Lawson",insId:"5YK8-JL4-DP27",claimId:"CLM-0314",cpts:[{code:"99454",billed:55,paid:0},{code:"99457",billed:48,paid:0}]},
+     {name:"Harold Freeman",insId:"6QZ3-PW9-UM54",claimId:"CLM-0315",cpts:[{code:"99490",billed:67,paid:67},{code:"99439",billed:47,paid:47}]},
+   ]},
+  {id:"INV-2503-04",clinic:"Pacific Care Group",month:"2025-03",split:{c:55,h:45},status:"Paid",dueDate:"2025-04-15",payments:[{date:"2025-04-01",amount:73,method:"Check",ref:"CHK-9901"}],
+   patients:[
+     {name:"Barbara Chen",insId:"7BF6-KT2-HV39",claimId:"CLM-0316",cpts:[{code:"99490",billed:67,paid:67},{code:"99439",billed:47,paid:47},{code:"99453",billed:19,paid:19}]},
+   ]},
+];
+
+invoices.forEach(inv=>{
+  inv.totalBilled=inv.patients.reduce((a,p)=>a+p.cpts.reduce((b,c)=>b+c.billed,0),0);
+  inv.totalInsPaid=inv.patients.reduce((a,p)=>a+p.cpts.reduce((b,c)=>b+c.paid,0),0);
+  inv.invoiceAmt=Math.round(inv.totalBilled*(inv.split.h/100)*100)/100;
+  inv.paid=inv.payments.reduce((a,p)=>a+p.amount,0);
+});
+
+const paymentLog=[
+  {date:"2025-04-01",invId:"INV-2503-04",clinic:"Pacific Care Group",method:"Check",ref:"CHK-9901",amount:73,settled:true},
+  {date:"2025-04-02",invId:"INV-2503-03",clinic:"Lakeview Medical",method:"ACH",ref:"ACH-5501",amount:115,settled:true},
+];
+
+const unmatchedData=[
+  {id:1,medicareId:"9ZZ1-XX4-AB12",patient:"Unknown",cpt:"99490",amount:67,matched:false},
+  {id:2,medicareId:"5YK8-JL4-DP27",patient:"P. Lawson",cpt:"99457",amount:48,matched:false},
+];
+const claimOpts=["CLM-0310 · Margaret Collins","CLM-0311 · Robert Nguyen","CLM-0312 · Dorothy Simmons","CLM-0313 · James Watkins","CLM-0314 · Patricia Lawson","CLM-0315 · Harold Freeman","CLM-0316 · Barbara Chen"];
+
+function invBadge(s){const m={"Unpaid":"b-unpaid","Partial":"b-partial","Paid":"b-paid","Settled":"b-settled","Reissue":"b-reissue","Void":"b-void"};return `<span class="badge ${m[s]||'b-unpaid'}">${s}</span>`;}
+
+function switchTab(t){
+  ['invoices','payments','eob'].forEach(id=>document.getElementById('tab-'+id).classList.toggle('active',id===t));
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['invoices','payments','eob'][i]===t));
+}
+
+function changeMonth(d){monthIdx=Math.max(0,Math.min(MONTHS.length-1,monthIdx+d));document.getElementById('month-lbl').textContent=MONTHS[monthIdx];renderAll();}
+
+function renderSummary(){
+  const active=invoices.filter(i=>i.status!=='Void');
+  const total=active.reduce((a,i)=>a+i.invoiceAmt,0);
+  const coll=active.reduce((a,i)=>a+i.paid,0);
+  const out=total-coll;
+  document.getElementById('s-total').textContent='$'+Math.round(total).toLocaleString();
+  document.getElementById('s-inv-sub').textContent=active.length+' invoices · '+active.reduce((a,i)=>a+i.patients.length,0)+' patients';
+  document.getElementById('s-coll').textContent='$'+Math.round(coll).toLocaleString();
+  document.getElementById('s-coll-sub').textContent=active.filter(i=>i.status==='Paid'||i.status==='Settled').length+' settled / paid';
+  document.getElementById('s-out').textContent='$'+Math.round(out).toLocaleString();
+  document.getElementById('s-out-sub').textContent=active.filter(i=>i.status==='Unpaid'||i.status==='Reissue').length+' unpaid invoices';
+  const settled=active.filter(i=>i.status==='Settled').reduce((a,i)=>a+i.invoiceAmt,0);
+  const paid=active.filter(i=>i.status==='Paid').reduce((a,i)=>a+i.invoiceAmt,0);
+  const partial=active.filter(i=>i.status==='Partial').reduce((a,i)=>a+i.paid,0);
+  const unpaid=out-partial;
+  const t=Math.max(total,1);
+  document.getElementById('rate-bar').innerHTML=
+    `<div class="rb-settled" style="width:${Math.round(settled/t*100)}%"></div>`+
+    `<div class="rb-paid"    style="width:${Math.round(paid/t*100)}%"></div>`+
+    `<div class="rb-partial" style="width:${Math.round(partial/t*100)}%"></div>`+
+    `<div class="rb-unpaid"  style="flex:1"></div>`;
+  const pt=paymentLog.reduce((a,p)=>a+p.amount,0);
+  document.getElementById('p-total').textContent='$'+pt.toLocaleString();
+  document.getElementById('p-sub').textContent=paymentLog.length+' payments';
+  document.getElementById('p-pend').textContent='$'+Math.round(out).toLocaleString();
+  document.getElementById('p-pend-sub').textContent=active.filter(i=>i.status==='Unpaid'||i.status==='Partial'||i.status==='Reissue').length+' invoices';
+  document.getElementById('p-settled').textContent=active.filter(i=>i.status==='Settled').length;
+  document.getElementById('pay-count').textContent=paymentLog.length+' payments';
+}
+
+function renderInvoices(){
+  const sf=document.getElementById('f-status').value;
+  const sr=(document.getElementById('f-search').value||'').toLowerCase();
+  const filtered=invoices.filter(i=>{if(sf&&i.status!==sf)return false;if(sr&&!i.clinic.toLowerCase().includes(sr)&&!i.id.toLowerCase().includes(sr))return false;return true;});
+  document.getElementById('inv-count').textContent=filtered.length+' invoices';
+  const tbody=document.getElementById('inv-tbody');
+  tbody.innerHTML='';
+  filtered.forEach(inv=>{
+    const bal=inv.invoiceAmt-inv.paid;
+    const isExp=expInv.has(inv.id);
+    const tr=document.createElement('tr');
+    tr.className='inv-row'+(selId===inv.id?' active':'')+(inv.status==='Void'?' voided':'');
+    tr.innerHTML=`
+      <td style="font-family:var(--font-mono);font-size:11px;color:var(--color-text-secondary)"><span class="exp-icon ${isExp?'exp-open':''}">▶</span>${inv.id}</td>
+      <td style="font-weight:500">${inv.clinic}</td>
+      <td style="text-align:center;color:var(--color-text-secondary)">${inv.patients.length}</td>
+      <td style="text-align:center;color:var(--color-text-secondary)">${inv.patients.reduce((a,p)=>a+p.cpts.length,0)}</td>
+      <td>$${inv.totalBilled.toFixed(2)}</td>
+      <td style="font-weight:500">$${inv.invoiceAmt.toFixed(2)}</td>
+      <td>${inv.paid>0?'$'+inv.paid.toFixed(2):'—'}</td>
+      <td style="${bal>0?'color:#791F1F':''}">$${bal.toFixed(2)}</td>
+      <td>${invBadge(inv.status)}</td>
+      <td style="font-size:11px;color:var(--color-text-tertiary)">${inv.dueDate}</td>`;
+    tr.onclick=(e)=>{
+      const onExp=e.target.classList.contains('exp-icon')||e.target.closest('td')===tr.querySelector('td:first-child');
+      if(onExp){if(isExp)expInv.delete(inv.id);else expInv.add(inv.id);renderInvoices();return;}
+      if(selId===inv.id){closePanel();return;}
+      selId=inv.id; expInv.add(inv.id);
+      document.getElementById('inv-side').classList.add('open');
+      renderPanel(inv); renderInvoices();
+    };
+    tbody.appendChild(tr);
+    if(isExp){
+      inv.patients.forEach(pt=>{
+        const pk=inv.id+pt.name; const ptExp=expPt.has(pk);
+        const ptB=pt.cpts.reduce((a,c)=>a+c.billed,0); const ptP=pt.cpts.reduce((a,c)=>a+c.paid,0);
+        const ptr=document.createElement('tr'); ptr.className='pt-row'+(ptExp?' pt-open':'');
+        ptr.innerHTML=`
+          <td colspan="2"><span class="exp-icon ${ptExp?'exp-open':''}">▶</span><span style="font-weight:500">${pt.name}</span> <span style="font-size:10px;font-family:var(--font-mono);color:var(--color-text-tertiary)">${pt.insId}</span></td>
+          <td colspan="2" style="color:var(--color-text-tertiary);font-size:11px">${pt.claimId}</td>
+          <td>$${ptB.toFixed(2)}</td><td style="color:var(--color-text-tertiary)">—</td>
+          <td>${ptP>0?'$'+ptP.toFixed(2):'—'}</td>
+          <td style="${(ptB-ptP)>0?'color:#791F1F':''}">$${(ptB-ptP).toFixed(2)}</td>
+          <td colspan="2"><span style="font-size:11px;color:var(--color-text-tertiary)">${pt.cpts.length} CPT codes</span></td>`;
+        ptr.onclick=()=>{if(ptExp)expPt.delete(pk);else expPt.add(pk);renderInvoices();};
+        tbody.appendChild(ptr);
+        if(ptExp){
+          pt.cpts.forEach(cpt=>{
+            const cr=document.createElement('tr'); cr.className='cpt-row';
+            const cb=cpt.billed-cpt.paid;
+            cr.innerHTML=`<td colspan="2"><span style="font-family:var(--font-mono);font-weight:500">${cpt.code}</span></td><td colspan="2"></td><td>$${cpt.billed.toFixed(2)}</td><td></td><td>${cpt.paid>0?'$'+cpt.paid.toFixed(2):'—'}</td><td style="${cb>0?'color:#791F1F':''}">$${cb.toFixed(2)}</td><td colspan="2"></td>`;
+            tbody.appendChild(cr);
+          });
+        }
+      });
+    }
+  });
+}
+
+function renderPanel(inv){
+  document.getElementById('sp-title').textContent=inv.id;
+  const bal=inv.invoiceAmt-inv.paid;
+  let notice='';
+  if(inv.status==='Reissue') notice=`<div class="notice-reissue">EOB 재발행으로 금액이 변경됐습니다.<br><span style="font-size:11px;opacity:0.8">${inv.reissueNote||''}</span></div>`;
+  if(inv.status==='Settled'||inv.status==='Paid') notice=`<div class="notice-settled">정산 완료 — 수금이 확인됐습니다.</div>`;
+  const ptRows=inv.patients.map(pt=>{const b=pt.cpts.reduce((a,c)=>a+c.billed,0);const p=pt.cpts.reduce((a,c)=>a+c.paid,0);return `<tr><td style="font-weight:500">${pt.name}</td><td style="font-family:var(--font-mono);font-size:10px;color:var(--color-text-tertiary)">${pt.insId}</td><td style="text-align:center;color:var(--color-text-secondary)">${pt.cpts.length}</td><td>$${b.toFixed(2)}</td><td>${p>0?'$'+p.toFixed(2):'—'}</td></tr>`;}).join('');
+  const payHist=inv.payments.length?inv.payments.map(p=>`<div class="pay-row"><div><div class="pay-left">${p.date} · ${p.method}</div><div class="pay-ref">${p.ref}</div></div><div class="pay-amt">$${p.amount.toFixed(2)}</div></div>`).join(''):`<div style="font-size:12px;color:var(--color-text-tertiary);padding:4px 0">No payments recorded.</div>`;
+  const isSettled=inv.status==='Paid'||inv.status==='Settled';
+  const actions=isSettled?`<button class="sp-btn sp-btn-primary">↓ Download invoice (PDF)</button>`:inv.status==='Reissue'?`<button class="sp-btn sp-btn-amber">↓ Download updated invoice (PDF)</button><button class="sp-btn sp-btn-primary" onclick="alert('Payment recorded')">+ Record payment</button><button class="sp-btn" onclick="alert('Settled')">✓ Mark as settled</button>`:`<button class="sp-btn sp-btn-primary">↓ Download invoice (PDF)</button><button class="sp-btn sp-btn-primary" onclick="alert('Payment recorded')">+ Record payment</button><button class="sp-btn" onclick="alert('Settled')">✓ Mark as settled</button><button class="sp-btn sp-btn-danger" onclick="alert('Voided')">✕ Void invoice</button>`;
+  document.getElementById('sp-body').innerHTML=`
+    ${notice}
+    <div class="sp-sec"><div class="sp-lbl">Invoice info</div>
+      <table class="info-tbl">
+        <tr><td>Clinic</td><td style="font-weight:500">${inv.clinic}</td></tr>
+        <tr><td>Period</td><td>${inv.month}</td></tr>
+        <tr><td>Patients</td><td>${inv.patients.length} patients · ${inv.patients.reduce((a,p)=>a+p.cpts.length,0)} CPT lines</td></tr>
+        <tr><td>Total billed</td><td>$${inv.totalBilled.toFixed(2)}</td></tr>
+        <tr><td>Revenue split</td><td><div class="split-pills"><span class="sp-clinic">Clinic ${inv.split.c}%</span><span class="sp-hicare">Hicare ${inv.split.h}%</span></div></td></tr>
+        <tr><td>Invoice amount</td><td style="font-weight:500;font-size:14px">$${inv.invoiceAmt.toFixed(2)}</td></tr>
+        <tr><td>Paid</td><td>$${inv.paid.toFixed(2)}</td></tr>
+        <tr><td>Balance</td><td style="${bal>0?'color:#791F1F;font-weight:500':''}">$${bal.toFixed(2)}</td></tr>
+        <tr><td>Status</td><td>${invBadge(inv.status)}</td></tr>
+        <tr><td>Due date</td><td>${inv.dueDate}</td></tr>
+      </table>
+    </div>
+    <div class="sp-sec"><div class="sp-lbl">Patient breakdown</div>
+      <table class="pt-sum-tbl">
+        <thead><tr><th>Patient</th><th>Medicare ID</th><th style="text-align:center">CPTs</th><th>Billed</th><th>Ins. paid</th></tr></thead>
+        <tbody>${ptRows}</tbody>
+        <tfoot><tr><td colspan="3">Total</td><td>$${inv.totalBilled.toFixed(2)}</td><td>${inv.totalInsPaid>0?'$'+inv.totalInsPaid.toFixed(2):'—'}</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="sp-sec"><div class="sp-lbl">Payment history</div>
+      ${payHist}
+      ${!isSettled?`<div class="pay-inp-row"><input type="number" placeholder="Amount" step="0.01"/><select><option>ACH</option><option>Check</option><option>Wire</option></select><input type="text" placeholder="Ref no."/><button class="pay-add" onclick="alert('Payment recorded')">+ Add</button></div>`:''}
+    </div>
+    <div class="sp-sec"><div class="sp-lbl">Actions</div>${actions}</div>`;
+}
+
+function closePanel(){selId=null;document.getElementById('inv-side').classList.remove('open');renderInvoices();}
+
+function renderPayments(){
+  const tbody=document.getElementById('pay-tbody');
+  tbody.innerHTML='';
+  paymentLog.forEach(p=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="color:var(--color-text-tertiary)">${p.date}</td><td style="font-family:var(--font-mono);font-size:11px;color:var(--color-text-secondary)">${p.invId}</td><td style="font-weight:500">${p.clinic}</td><td>${p.method}</td><td style="font-family:var(--font-mono);font-size:11px;color:var(--color-text-tertiary)">${p.ref}</td><td style="font-weight:500">$${p.amount.toFixed(2)}</td><td>${p.settled?`<span class="badge b-settled">Settled</span>`:`<span class="badge b-partial">Partial</span>`}</td><td>${p.settled?'—':`<button style="font-size:11px;padding:4px 9px;border-radius:var(--border-radius-md);border:0.5px solid #185FA5;background:#E6F1FB;color:#0C447C;cursor:pointer;" onclick="alert('Settled')">Settle</button>`}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderUnmatched(){
+  const rem=unmatchedData.filter(u=>!u.matched);
+  document.getElementById('unmatched-cnt').textContent=rem.length;
+  document.getElementById('unmatched-lbl').textContent=rem.length+' items';
+  const tbody=document.getElementById('unmatched-tbody');
+  tbody.innerHTML='';
+  rem.forEach(u=>{
+    const opts=claimOpts.map(c=>`<option>${c}</option>`).join('');
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="font-family:var(--font-mono);font-size:11px">${u.medicareId}</td><td style="color:var(--color-text-secondary)">${u.patient}</td><td style="font-family:var(--font-mono);font-size:11px">${u.cpt}</td><td style="font-weight:500">$${u.amount.toFixed(2)}</td><td><select class="match-sel"><option value="">— Select claim —</option>${opts}</select></td><td><button class="match-btn" onclick="doMatch(${u.id},this)">Match</button></td>`;
+    tbody.appendChild(tr);
+  });
+  if(!rem.length) tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:20px;font-size:12px;color:var(--color-text-tertiary)">All claims matched.</td></tr>`;
+}
+
+function doMatch(id,btn){const sel=btn.closest('tr').querySelector('.match-sel').value;if(!sel){alert('Select a claim first.');return;}unmatchedData.find(u=>u.id===id).matched=true;renderUnmatched();}
+
+function renderAll(){renderSummary();renderInvoices();renderPayments();renderUnmatched();}
+renderAll();
+</script>

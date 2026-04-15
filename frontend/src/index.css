@@ -1,0 +1,127 @@
+@import "tailwindcss";
+/* 폰트는 index.html <head>의 <link> 태그로 로드 */
+
+/* ── Design Tokens ─────────────────────────────
+   출처: doc/design/design-tokens.md
+   변경 시 design-tokens.md 먼저 수정 후 여기 반영
+──────────────────────────────────────────────── */
+@theme {
+  /* Surface */
+  --color-surface:                   #fcf9f8;
+  --color-surface-bright:            #fcf9f8;
+  --color-surface-dim:               #dcd9d9;
+  --color-surface-container-lowest:  #ffffff;
+  --color-surface-container-low:     #f6f3f2;
+  --color-surface-container:         #f0eded;
+  --color-surface-container-high:    #eae7e7;
+  --color-surface-container-highest: #e5e2e1;
+  --color-surface-variant:           #e5e2e1;
+  --color-background:                #fcf9f8;
+
+  /* Page — 콘텐츠 영역 메인 배경색
+     Clinic Settings 우측 패널 기준 (#f8fafc = slate-50)
+     모든 페이지 우측/메인 콘텐츠 영역에서 bg-page-bg 사용 */
+  --color-page-bg:                   #f8fafc;
+
+  /* Primary */
+  --color-primary:                   #005dac;
+  --color-primary-container:         #1976d2;
+  --color-primary-fixed:             #d4e3ff;
+  --color-primary-fixed-dim:         #a5c8ff;
+  --color-on-primary:                #ffffff;
+  --color-on-primary-container:      #fffdff;
+  --color-on-primary-fixed:          #001c3a;
+  --color-on-primary-fixed-variant:  #004786;
+  --color-inverse-primary:           #a5c8ff;
+  --color-surface-tint:              #005faf;
+
+  /* Secondary */
+  --color-secondary:                 #466270;
+  --color-secondary-container:       #c6e4f4;
+  --color-secondary-fixed:           #c9e7f7;
+  --color-secondary-fixed-dim:       #adcbda;
+  --color-on-secondary:              #ffffff;
+  --color-on-secondary-container:    #4a6774;
+  --color-on-secondary-fixed:        #001f2a;
+  --color-on-secondary-fixed-variant:#2e4b57;
+
+  /* Tertiary (Success) */
+  --color-tertiary:                  #006c1b;
+  --color-tertiary-container:        #278631;
+  --color-tertiary-fixed:            #98f994;
+  --color-tertiary-fixed-dim:        #7ddc7a;
+  --color-on-tertiary:               #ffffff;
+  --color-on-tertiary-container:     #f9fff3;
+  --color-on-tertiary-fixed:         #002204;
+  --color-on-tertiary-fixed-variant: #005313;
+
+  /* Error */
+  --color-error:                     #ba1a1a;
+  --color-error-container:           #ffdad6;
+  --color-on-error:                  #ffffff;
+  --color-on-error-container:        #93000a;
+
+  /* Neutral */
+  --color-on-surface:                #1b1c1c;
+  --color-on-surface-variant:        #414752;
+  --color-on-background:             #1b1c1c;
+  --color-outline:                   #717783;
+  --color-outline-variant:           #c1c6d4;
+  --color-inverse-surface:           #303030;
+  --color-inverse-on-surface:        #f3f0ef;
+
+  /* Typography */
+  --font-sans:    "Inter", sans-serif;
+  --font-mono:    "SF Mono", "Fira Code", monospace;
+
+  /* Border Radius */
+  --radius:       0.125rem;   /* 2px  — 버튼, 인풋 기본 */
+  --radius-lg:    0.25rem;    /* 4px  — 배지, 소형 칩 */
+  --radius-xl:    0.5rem;     /* 8px  — 카드, 모달 */
+  --radius-full:  0.75rem;    /* 12px — Status Chip, Avatar */
+}
+
+/* ── Global Reset ──────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Material Symbols ──────────────────────────────────────
+   폰트 이름을 텍스트로 쓰면 해당 아이콘으로 렌더링된다.
+   예) <span class="material-symbols-outlined">sync</span>
+   font-family 가 없으면 "sync" 문자 그대로 표시되므로 필수.
+──────────────────────────────────────────────────────────── */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+.icon-filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ── Number input — spinner 제거 ───────────── */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* ── Scrollbar ─────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e5e2e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #dcd9d9; }

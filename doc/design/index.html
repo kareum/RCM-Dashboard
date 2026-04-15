@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing Assistant — Epic Overview</title>
+  <style>
+    /* ─── CSS VARIABLES (shared with story pages) ─────────────────── */
+    :root {
+      --font-sans: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      --font-mono: "SF Mono", "Fira Code", monospace;
+      --color-text-primary:    #1a1918;
+      --color-text-secondary:  #5f5e5a;
+      --color-text-tertiary:   #9e9c97;
+      --color-text-success:    #27500a;
+      --color-text-danger:     #791f1f;
+      --color-background-primary:   #ffffff;
+      --color-background-secondary: #f5f4ef;
+      --color-border-primary:   #d0cfc9;
+      --color-border-secondary: #c4c2bc;
+      --color-border-tertiary:  #f5f3e6;
+      --border-radius-sm: 4px;
+      --border-radius-md: 6px;
+      --border-radius-lg: 10px;
+      --border-radius-xl: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans); background: #edece6; color: var(--color-text-primary); min-height: 100vh; }
+
+    /* ─── HOME VIEW ───────────────────────────────────────────────── */
+    #home-view {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ─── HEADER ──────────────────────────────────────────────────── */
+    .app-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 24px;
+      height: 52px;
+      background: white;
+      border-bottom: 0.5px solid var(--color-border-tertiary);
+      flex-shrink: 0;
+    }
+    .logo-icon {
+      width: 30px; height: 30px;
+      background: #185FA5;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 15px;
+    }
+    .app-name { font-size: 14px; font-weight: 600; }
+    .header-sep { width: 1px; height: 18px; background: var(--color-border-tertiary); }
+    .header-project { font-size: 12px; color: var(--color-text-secondary); }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .phase-badge {
+      font-size: 11px; padding: 3px 9px;
+      border-radius: var(--border-radius-md);
+      background: #E6F1FB; color: #0C447C; font-weight: 500;
+    }
+    .avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #d0cbc0; display: flex; align-items: center;
+      justify-content: center; font-size: 11px; font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+
+    /* ─── LAYOUT: SIDEBAR + MAIN ──────────────────────────────────── */
+    .app-body { display: flex; flex: 1; }
+
+    .sidebar {
+      width: 210px; flex-shrink: 0;
+      background: white;
+      border-right: 0.5px solid var(--color-border-tertiary);
+      padding: 16px 0;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .sidebar-label {
+      font-size: 10px; font-weight: 600;
+      color: var(--color-text-tertiary);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 2px 16px 6px;
+      margin-top: 8px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 12px 7px 16px;
+      margin: 0 8px;
+      border-radius: var(--border-radius-md);
+      font-size: 13px; color: var(--color-text-secondary);
+      cursor: pointer; transition: background 0.1s;
+      border: none; background: none; width: calc(100% - 16px); text-align: left;
+    }
+    .nav-item:hover { background: var(--color-background-secondary); }
+    .nav-item.active { background: #E6F1FB; color: #0C447C; font-weight: 500; }
+    .nav-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .nd-green { background: #0F6E56; }
+    .nd-purple { background: #534AB7; }
+    .nd-blue { background: #185FA5; }
+    .nd-orange { background: #854F0B; }
+    .nd-gray { background: #9e9c97; }
+    .nav-ready {
+      margin-left: auto; font-size: 10px; padding: 1px 6px;
+      border-radius: 10px; background: #E1F5EE; color: #085041;
+    }
+
+    /* ─── MAIN CONTENT ────────────────────────────────────────────── */
+    .main {
+      flex: 1; padding: 28px 32px;
+      overflow-y: auto;
+    }
+    .main-header { margin-bottom: 24px; }
+    .main-title { font-size: 19px; font-weight: 600; margin-bottom: 4px; }
+    .main-subtitle { font-size: 13px; color: var(--color-text-secondary); }
+
+    /* ─── EPIC MAP ────────────────────────────────────────────────── */
+    .epic-map { display: flex; flex-direction: column; gap: 0; }
+
+    .module-row {
+      display: flex; gap: 14px;
+    }
+    .module-row + .module-row { margin-top: 0; }
+
+    /* Arrow between rows */
+    .arrow-row {
+      display: flex; align-items: center; justify-content: center;
+      height: 34px;
+      color: var(--color-text-tertiary); font-size: 18px;
+    }
+
+    /* ─── MODULE CARD ─────────────────────────────────────────────── */
+    .module-card {
+      border-radius: var(--border-radius-xl);
+      padding: 16px 18px;
+      flex: 1;
+      border: 0.5px solid;
+    }
+    .mod-a { background: #f2fbf7; border-color: #0F6E5630; }
+    .mod-b { background: #f6f5fe; border-color: #534AB730; }
+    .mod-c { background: #eef5fd; border-color: #185FA530; }
+    .mod-d { background: #fdf7ee; border-color: #854F0B30; }
+    .mod-e { background: #f2fbf7; border-color: #0F6E5630; }
+    .mod-p { background: #f5f4ef; border-color: var(--color-border-tertiary); }
+
+    .module-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
+      text-transform: uppercase;
+      padding: 2px 8px; border-radius: var(--border-radius-sm);
+      margin-bottom: 8px;
+    }
+    .mod-a .module-tag { background: #cef0e2; color: #065040; }
+    .mod-b .module-tag { background: #dddcff; color: #3530a0; }
+    .mod-c .module-tag { background: #cde4f8; color: #0a3d6e; }
+    .mod-d .module-tag { background: #fae3bf; color: #5a3205; }
+    .mod-e .module-tag { background: #cef0e2; color: #065040; }
+    .mod-p .module-tag { background: var(--color-border-tertiary); color: var(--color-text-tertiary); }
+
+    .module-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .module-desc { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 14px; }
+
+    .mod-a .module-name { color: #083d30; }
+    .mod-b .module-name { color: #2e2880; }
+    .mod-c .module-name { color: #0a3d6e; }
+    .mod-d .module-name { color: #5a3205; }
+    .mod-e .module-name { color: #083d30; }
+    .mod-p .module-name { color: var(--color-text-secondary); }
+
+    .story-list { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    /* ─── STORY CARD ──────────────────────────────────────────────── */
+    .story-card {
+      background: white;
+      border: 0.5px solid var(--color-border-secondary);
+      border-radius: var(--border-radius-lg);
+      padding: 11px 14px;
+      cursor: pointer;
+      transition: box-shadow 0.15s, transform 0.15s;
+      text-decoration: none; color: inherit;
+      flex: 1; min-width: 130px;
+      display: block;
+    }
+    .story-card:hover {
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      transform: translateY(-1px);
+      border-color: var(--color-border-primary);
+    }
+    .story-card.no-mockup {
+      cursor: default; opacity: 0.55;
+    }
+    .story-card.no-mockup:hover {
+      box-shadow: none; transform: none;
+      border-color: var(--color-border-secondary);
+    }
+
+    .sc-num { font-size: 10px; font-weight: 600; color: var(--color-text-tertiary); margin-bottom: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .sc-title { font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+    .sc-status { display: flex; align-items: center; gap: 5px; font-size: 11px; }
+    .sc-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .s-ready .sc-dot { background: #2a9d1e; }
+    .s-ready .sc-status { color: #1e6e15; }
+    .s-ready .sc-num { color: #27500a; }
+    .s-wip .sc-dot { background: #d07a0a; }
+    .s-wip .sc-status { color: #8f5300; }
+    .s-plan .sc-dot { background: var(--color-text-tertiary); }
+    .s-plan .sc-status { color: var(--color-text-tertiary); }
+
+    /* ─── STORY VIEW (full screen overlay) ───────────────────────── */
+    #story-view {
+      display: none;
+      position: fixed; inset: 0; z-index: 200;
+      flex-direction: column;
+      background: white;
+    }
+    #story-view.open { display: flex; }
+
+    .sv-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 0 20px; height: 52px;
+      border-bottom: 0.5px solid var(--color-border-tertiary);
+      background: white; flex-shrink: 0;
+    }
+    .sv-back {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--color-text-secondary);
+      cursor: pointer; background: none; border: none;
+      padding: 6px 10px; border-radius: var(--border-radius-md);
+      transition: background 0.1s;
+    }
+    .sv-back:hover { background: var(--color-background-secondary); }
+    .sv-title { font-size: 14px; font-weight: 600; }
+    .sv-tag { font-size: 11px; padding: 2px 8px; border-radius: var(--border-radius-sm); font-weight: 500; }
+    .sv-body { flex: 1; overflow: hidden; background: var(--color-background-secondary); }
+    .sv-frame { width: 100%; height: 100%; border: none; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════ HOME VIEW ════════════════════ -->
+<div id="home-view">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="logo-icon">⚕</div>
+    <span class="app-name">Billing Assistant</span>
+    <div class="header-sep"></div>
+    <span class="header-project">Epic Overview</span>
+    <div class="header-right">
+      <span class="phase-badge">Phase 1</span>
+      <div class="avatar">AK</div>
+    </div>
+  </header>
+
+  <!-- BODY: SIDEBAR + MAIN -->
+  <div class="app-body">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <span class="sidebar-label">Overview</span>
+      <button class="nav-item active" onclick="void(0)">
+        <span style="font-size:13px;">🗂</span> Epic Map
+      </button>
+
+      <span class="sidebar-label">Module A — Foundation</span>
+      <button class="nav-item" onclick="openStory('story8_clinic_settings_v3.html','Story 8 — Clinic Settings','mod-a')">
+        <span class="nav-dot nd-green"></span> Story 8 · Clinic Settings
+        <span class="nav-ready">Ready</span>
+      </button>
+
+      <span class="sidebar-label">Module B — Patient</span>
+      <button class="nav-item" onclick="openStory('story2_patient_insurance_status_mockup.html','Story 2 — Patient Insurance Status','mod-b')">
+        <span class="nav-dot nd-purple"></span> Story 2 · Patient Insurance
+        <span class="nav-ready">Ready</span>
+      </button>
+
+      <span class="sidebar-label">Module C — Billing Core</span>
+      <button class="nav-item" onclick="openStory('story3_billing_workflow_v4.html','Story 3+4 — Billing Workflow + Reports','mod-c')">
+        <span class="nav-dot nd-blue"></span> Story 3+4 · Billing + Reports
+        <span class="nav-ready">Ready</span>
+      </button>
+      <button class="nav-item" onclick="openStory('story5_invoice_payment_v3.html','Story 5+6 — Invoice & EOB Upload','mod-c')">
+        <span class="nav-dot nd-blue"></span> Story 5+6 · Invoice & EOB
+        <span class="nav-ready">Ready</span>
+      </button>
+
+      <span class="sidebar-label">Module E — Admin</span>
+      <button class="nav-item" onclick="openStory('story7_claimmd_forms.html','Story 7 — ClaimMD Forms','mod-e')">
+        <span class="nav-dot nd-green"></span> Story 7 · ClaimMD Forms
+        <span class="nav-ready">Ready</span>
+      </button>
+
+      <span class="sidebar-label">Phase 2</span>
+      <button class="nav-item no-mockup" disabled>
+        <span class="nav-dot nd-gray"></span> Story 9 · EMR Quick Links
+      </button>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="main-header">
+        <h1 class="main-title">Billing Dashboard — Epic Breakdown</h1>
+        <p class="main-subtitle">스토리를 클릭하면 목업 화면으로 이동합니다. 초록 배지 = 목업 준비 완료</p>
+      </div>
+
+      <div class="epic-map">
+
+        <!-- ROW 1: Module A + Module B -->
+        <div class="module-row">
+
+          <!-- MODULE A -->
+          <div class="module-card mod-a">
+            <div class="module-tag">A · Foundation</div>
+            <div class="module-name">기반 설정</div>
+            <div class="module-desc">클리닉 정보 · CPT 수가 · Revenue split</div>
+            <div class="story-list">
+              <div class="story-card s-ready" onclick="openStory('story8_clinic_settings_v3.html','Story 8 — Clinic Settings','mod-a')" style="max-width:100%;">
+                <div class="sc-num">Story 8</div>
+                <div class="sc-title" style="margin-bottom:8px;">Clinic Settings</div>
+                <div style="display:flex;flex-direction:column;gap:0;border:0.5px solid #cee8d8;border-radius:5px;overflow:hidden;margin-bottom:8px;font-size:11px;">
+                  <div style="padding:5px 9px;color:#365124;">기본정보 · Service type · CMS-1500 Billing Info</div>
+                  <div style="height:0.5px;background:#cee8d8;"></div>
+                  <div style="padding:5px 9px;color:#365124;">Revenue split · EMR access</div>
+                </div>
+                <div class="sc-status"><span class="sc-dot"></span>목업 완료</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODULE B -->
+          <div class="module-card mod-b">
+            <div class="module-tag">B · Patient Status</div>
+            <div class="module-name">환자 보험 상태</div>
+            <div class="module-desc">외부 DB 환자 데이터 연동</div>
+            <div class="story-list">
+              <div class="story-card s-ready" onclick="openStory('story2_patient_insurance_status_mockup.html','Story 2 — Patient Insurance Status','mod-b')" style="max-width:100%;">
+                <div class="sc-num">Story 2</div>
+                <div class="sc-title" style="margin-bottom:8px;">Patient Insurance Status</div>
+                <div style="display:flex;flex-direction:column;gap:0;border:0.5px solid #d8d4f8;border-radius:5px;overflow:hidden;margin-bottom:8px;font-size:11px;">
+                  <div style="padding:5px 9px;color:#3530a0;">QMB / Deductible 상태 · Medicare ID</div>
+                  <div style="height:0.5px;background:#d8d4f8;"></div>
+                  <div style="padding:5px 9px;color:#3530a0;">CPT 1M/3M/All 기간 필터 · 수동 Hold 토글</div>
+                </div>
+                <div class="sc-status"><span class="sc-dot"></span>목업 완료</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /row 1 -->
+
+        <!-- ARROW -->
+        <div class="arrow-row">
+          <svg width="20" height="28" viewBox="0 0 20 28" fill="none">
+            <line x1="10" y1="0" x2="10" y2="20" stroke="#9e9c97" stroke-width="1.5"/>
+            <polyline points="4,14 10,22 16,14" fill="none" stroke="#9e9c97" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <!-- ROW 2: Module C (full width) -->
+        <div class="module-row">
+          <div class="module-card mod-c">
+            <div class="module-tag">C · Billing Core</div>
+            <div class="module-name">핵심 업무 흐름</div>
+            <div class="module-desc">RPM/CCM Billing → ERA → Invoice → Settlement</div>
+            <div class="story-list">
+
+              <div class="story-card s-ready" onclick="openStory('story3_billing_workflow_v4.html','Story 3+4 — Billing Workflow + Reports','mod-c')">
+                <div class="sc-num">Story 3+4</div>
+                <div class="sc-title" style="margin-bottom:8px;">Billing Workflow + Reports</div>
+                <div style="display:flex;flex-direction:column;gap:0;border:0.5px solid #c4ddf5;border-radius:5px;overflow:hidden;margin-bottom:8px;font-size:11px;">
+                  <div style="padding:5px 9px;color:#0a3d6e;">이번 달 청구 모드 / 지난달 현황 조회 모드 자동 전환</div>
+                  <div style="height:0.5px;background:#c4ddf5;"></div>
+                  <div style="padding:5px 9px;color:#0a3d6e;">Pre-claim → Paid/Denied 5단계 · AR Aging · CSV/Excel</div>
+                  <div style="height:0.5px;background:#c4ddf5;"></div>
+                  <div style="padding:5px 9px;color:#0a3d6e;">사이드 패널 Invoice 미리보기 (지난달) / Story 5 안내 (이번달)</div>
+                </div>
+                <div class="sc-status"><span class="sc-dot"></span>목업 완료</div>
+              </div>
+
+              <div class="story-card s-ready" onclick="openStory('story5_invoice_payment_v3.html','Story 5+6 — Invoice & EOB Upload','mod-c')">
+                <div class="sc-num">Story 5+6</div>
+                <div class="sc-title" style="margin-bottom:8px;">Invoice & EOB Upload</div>
+                <div style="display:flex;flex-direction:column;gap:0;border:0.5px solid #c4ddf5;border-radius:5px;overflow:hidden;margin-bottom:8px;font-size:11px;">
+                  <div style="padding:5px 9px;color:#0a3d6e;">월 네비게이션 · 수금현황 색상 바 (Settled/Paid/Partial/Unpaid)</div>
+                  <div style="height:0.5px;background:#c4ddf5;"></div>
+                  <div style="padding:5px 9px;color:#0a3d6e;">Invoice & Payment 탭 · EOB Upload & Matching 탭</div>
+                  <div style="height:0.5px;background:#c4ddf5;"></div>
+                  <div style="padding:5px 9px;color:#0a3d6e;">EOB PDF 업로드 · Medicare ID 자동매칭 · 수동매칭</div>
+                </div>
+                <div class="sc-status"><span class="sc-dot"></span>목업 완료</div>
+              </div>
+
+            </div>
+          </div>
+        </div><!-- /row 2 -->
+
+        <!-- ARROW -->
+        <div class="arrow-row">
+          <svg width="20" height="28" viewBox="0 0 20 28" fill="none">
+            <line x1="10" y1="0" x2="10" y2="20" stroke="#9e9c97" stroke-width="1.5"/>
+            <polyline points="4,14 10,22 16,14" fill="none" stroke="#9e9c97" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <!-- ROW 3: Module E + Phase 2 -->
+        <div class="module-row">
+
+          <!-- MODULE E -->
+          <div class="module-card mod-e">
+            <div class="module-tag">E · Admin / Forms</div>
+            <div class="module-name">청구 서식 관리</div>
+            <div class="module-desc">ClaimMD 양식 생성 및 다운로드</div>
+            <div class="story-list">
+              <div class="story-card s-ready" onclick="openStory('story7_claimmd_forms.html','Story 7 — ClaimMD Forms','mod-e')" style="max-width:100%;">
+                <div class="sc-num">Story 7</div>
+                <div class="sc-title" style="margin-bottom:8px;">ClaimMD Forms</div>
+                <div style="display:flex;flex-direction:column;gap:0;border:0.5px solid #cee8d8;border-radius:5px;overflow:hidden;margin-bottom:8px;font-size:11px;">
+                  <div style="padding:5px 9px;color:#365124;">클리닉+월 선택 → DB 로드</div>
+                  <div style="height:0.5px;background:#cee8d8;"></div>
+                  <div style="padding:5px 9px;color:#365124;">CMS-1500 PDF · ClaimMD CSV · 일괄 ZIP · 체크박스 선택</div>
+                </div>
+                <div class="sc-status"><span class="sc-dot"></span>목업 완료</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PHASE 2 -->
+          <div class="module-card mod-p">
+            <div class="module-tag">Phase 2 — Optional</div>
+            <div class="module-name">추후 확장 기능</div>
+            <div class="module-desc">로그인 연동 기반 EMR 연결</div>
+            <div class="story-list">
+              <div class="story-card s-plan no-mockup" style="max-width:100%;">
+                <div class="sc-num">Story 9</div>
+                <div class="sc-title">EMR Quick Links</div>
+                <div style="font-size:11px;color:#9e9c97;margin:6px 0 8px;">EMR 바로가기 (로그인 연동 제외)</div>
+                <div class="sc-status"><span class="sc-dot"></span>준비 중</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /row 3 -->
+
+      </div><!-- /epic-map -->
+
+      <!-- Legend -->
+      <div style="display:flex;gap:16px;margin-top:28px;align-items:center;font-size:12px;color:var(--color-text-tertiary);">
+        <span style="display:flex;align-items:center;gap:5px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#2a9d1e;display:inline-block;"></span>목업 완료 — 클릭하여 화면 확인
+        </span>
+        <span style="display:flex;align-items:center;gap:5px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#9e9c97;display:inline-block;"></span>준비 중 — 목업 미완성
+        </span>
+      </div>
+
+    </main>
+  </div><!-- /app-body -->
+</div><!-- /home-view -->
+
+
+<!-- ════════════════════ STORY VIEW (FULL SCREEN) ════════════════════ -->
+<div id="story-view">
+  <header class="sv-header">
+    <button class="sv-back" onclick="closeStory()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 4L6 8L10 12"/>
+      </svg>
+      Epic Map으로 돌아가기
+    </button>
+    <div class="header-sep"></div>
+    <span class="sv-title" id="sv-title"></span>
+    <span class="sv-tag" id="sv-tag" style="margin-left:4px;"></span>
+  </header>
+  <div class="sv-body">
+    <iframe class="sv-frame" id="sv-frame"></iframe>
+  </div>
+</div>
+
+
+<script>
+/* ── CSS vars string injected into story iframes ── */
+const CSS_VARS = `
+  :root {
+    --font-sans: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "SF Mono", "Fira Code", monospace;
+    --color-text-primary:    #1a1918;
+    --color-text-secondary:  #5f5e5a;
+    --color-text-tertiary:   #9e9c97;
+    --color-text-success:    #27500a;
+    --color-text-danger:     #791f1f;
+    --color-background-primary:   #ffffff;
+    --color-background-secondary: #f5f4ef;
+    --color-border-primary:   #d0cfc9;
+    --color-border-secondary: #c4c2bc;
+    --color-border-tertiary:  #e8e7e1;
+    --border-radius-sm: 4px;
+    --border-radius-md: 6px;
+    --border-radius-lg: 10px;
+    --border-radius-xl: 14px;
+  }
+`;
+
+const MODULE_TAG_STYLES = {
+  'mod-a': { bg:'#cef0e2', color:'#065040', label:'Module A — Foundation' },
+  'mod-b': { bg:'#dddcff', color:'#3530a0', label:'Module B — Patient Status' },
+  'mod-c': { bg:'#cde4f8', color:'#0a3d6e', label:'Module C — Billing Core' },
+  'mod-d': { bg:'#fae3bf', color:'#5a3205', label:'Module D — Collection' },
+  'mod-e': { bg:'#cef0e2', color:'#065040', label:'Module E — Admin / Forms' },
+  'mod-p': { bg:'#e8e7e1', color:'#5f5e5a', label:'Phase 2' },
+};
+
+function openStory(filename, title, moduleKey) {
+  const frame = document.getElementById('sv-frame');
+
+  frame.onload = function () {
+    try {
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      // inject CSS variables into the story page
+      const style = doc.createElement('style');
+      style.textContent = CSS_VARS + `
+        body { font-family: var(--font-sans); color: var(--color-text-primary);
+               background: var(--color-background-secondary); padding: 24px; }
+      `;
+      if (doc.head) {
+        doc.head.insertBefore(style, doc.head.firstChild);
+      } else {
+        doc.body.insertBefore(style, doc.body.firstChild);
+      }
+    } catch (e) { /* cross-origin guard — should not happen for local files */ }
+  };
+
+  frame.src = filename;
+
+  document.getElementById('sv-title').textContent = title;
+  const tagEl = document.getElementById('sv-tag');
+  const mod = MODULE_TAG_STYLES[moduleKey] || MODULE_TAG_STYLES['mod-p'];
+  tagEl.textContent = mod.label;
+  tagEl.style.background = mod.bg;
+  tagEl.style.color = mod.color;
+
+  document.getElementById('home-view').style.display = 'none';
+  document.getElementById('story-view').classList.add('open');
+  document.title = title + ' — Billing Assistant';
+}
+
+function closeStory() {
+  document.getElementById('story-view').classList.remove('open');
+  document.getElementById('home-view').style.display = 'flex';
+  document.getElementById('sv-frame').src = 'about:blank';
+  document.title = 'Billing Assistant — Epic Overview';
+}
+</script>
+
+</body>
+</html>

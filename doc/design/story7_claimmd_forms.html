@@ -1,0 +1,317 @@
+
+<style>
+  :root {
+    --font-sans: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "SF Mono", "Fira Code", monospace;
+    --color-text-primary: #1a1918;
+    --color-text-secondary: #5f5e5a;
+    --color-text-tertiary: #9e9c97;
+    --color-text-success: #27500a;
+    --color-text-danger: #791f1f;
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #fdfcf8;
+    --color-border-secondary: #ddd6c5;
+    --color-border-tertiary:  #ede8db;
+    --border-radius-md: 6px;
+    --border-radius-lg: 10px;
+  }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.root { font-family: var(--font-sans); color: var(--color-text-primary); }
+.page-header { margin-bottom: 20px; }
+.page-header h2 { font-size: 17px; font-weight: 500; margin-bottom: 4px; }
+.page-header p { font-size: 13px; color: var(--color-text-secondary); }
+
+.filter-card { background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 18px 20px; margin-bottom: 16px; }
+.filter-label { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+.filter-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.filter-field { display: flex; flex-direction: column; gap: 5px; }
+.filter-field label { font-size: 11px; color: var(--color-text-secondary); }
+.filter-field select { font-size: 13px; padding: 7px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); min-width: 200px; }
+.load-btn { font-size: 13px; padding: 7px 18px; border-radius: var(--border-radius-md); border: 0.5px solid #185FA5; background: #E6F1FB; color: #0C447C; font-weight: 500; cursor: pointer; }
+
+.preview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.preview-header h3 { font-size: 15px; font-weight: 500; }
+.preview-meta { font-size: 12px; color: var(--color-text-tertiary); margin-top: 2px; }
+
+.dl-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.dl-btn { display: flex; align-items: center; gap: 7px; font-size: 13px; padding: 9px 16px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-secondary); cursor: pointer; transition: all 0.1s; }
+.dl-btn:hover { background: var(--color-background-secondary); }
+.dl-btn-cms { border-color: #534AB7; color: #3C3489; background: #EEEDFE; }
+.dl-btn-cms:hover { background: #CECBF6; }
+.dl-btn-csv { border-color: #0F6E56; color: #085041; background: #E1F5EE; }
+.dl-btn-csv:hover { background: #9FE1CB; }
+.dl-btn-all { border-color: #185FA5; color: #0C447C; background: #E6F1FB; font-weight: 500; }
+.dl-btn-all:hover { background: #B5D4F4; }
+.dl-icon { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.dl-btn-label { display: flex; flex-direction: column; }
+.dl-btn-label span:first-child { font-size: 12px; font-weight: 500; }
+.dl-btn-label span:last-child { font-size: 11px; opacity: 0.7; margin-top: 1px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin: 16px 0; }
+.stat-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 14px; }
+.stat-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 5px; }
+.stat-value { font-size: 20px; font-weight: 500; }
+.stat-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 3px; }
+
+.tbl-wrap { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+.tbl-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--color-background-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); }
+.tbl-toolbar input { font-size: 13px; padding: 6px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); width: 200px; }
+.tbl-toolbar select { font-size: 13px; padding: 6px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); }
+.tbl-count { font-size: 12px; color: var(--color-text-tertiary); margin-left: auto; }
+.sel-all { font-size: 12px; color: #0C447C; cursor: pointer; white-space: nowrap; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+thead th { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-align: left; padding: 9px 10px; background: var(--color-background-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); white-space: nowrap; }
+tbody tr { transition: background 0.1s; }
+tbody tr:hover td { background: var(--color-background-secondary); }
+tbody tr.selected td { background: #E6F1FB; }
+tbody td { padding: 9px 10px; border-top: 0.5px solid var(--color-border-tertiary); vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.badge { font-size: 11px; padding: 2px 7px; border-radius: var(--border-radius-md); display: inline-block; white-space: nowrap; }
+.b-pre  { background: #EEEDFE; color: #3C3489; }
+.b-pend { background: #E6F1FB; color: #0C447C; }
+.b-paid { background: #EAF3DE; color: #27500A; }
+.b-deny { background: #FCEBEB; color: #791F1F; }
+.b-part { background: #FAEEDA; color: #633806; }
+.b-ready { background: #EAF3DE; color: #27500A; }
+.b-submitted { background: #E6F1FB; color: #0C447C; }
+
+.empty-state { text-align: center; padding: 48px 20px; color: var(--color-text-tertiary); font-size: 13px; }
+.empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+
+.sel-bar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #E6F1FB; border-bottom: 0.5px solid #B5D4F4; font-size: 12px; color: #0C447C; }
+.sel-bar-count { font-weight: 500; }
+.sel-dl-btn { font-size: 12px; padding: 5px 12px; border-radius: var(--border-radius-md); border: 0.5px solid #185FA5; background: #fff; color: #0C447C; cursor: pointer; white-space: nowrap; }
+</style>
+
+<div class="root">
+  <div class="page-header">
+    <h2>ClaimMD forms & templates</h2>
+    <p>DB에서 billing report를 읽어와 ClaimMD 제출용 양식을 생성하고 다운로드합니다.</p>
+  </div>
+
+  <div class="filter-card">
+    <div class="filter-label">데이터 조회 조건</div>
+    <div class="filter-row">
+      <div class="filter-field">
+        <label>Clinic</label>
+        <select id="f-clinic">
+          <option value="">— Select clinic —</option>
+          <option value="Sunrise Health Center">Sunrise Health Center</option>
+          <option value="Westside Clinic">Westside Clinic</option>
+          <option value="Lakeview Medical">Lakeview Medical</option>
+          <option value="Pacific Care Group">Pacific Care Group</option>
+          <option value="Northside Family Health">Northside Family Health</option>
+          <option value="Summit Wellness Center">Summit Wellness Center</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label>Month</label>
+        <select id="f-month">
+          <option value="">— Select month —</option>
+          <option value="2025-03">March 2025</option>
+          <option value="2025-02">February 2025</option>
+          <option value="2025-01">January 2025</option>
+          <option value="2024-12">December 2024</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label>Claim status</label>
+        <select id="f-status">
+          <option value="Pre-claim">Pre-claim only</option>
+          <option value="">All statuses</option>
+          <option value="Pending">Pending</option>
+          <option value="Denied">Denied (re-submit)</option>
+        </select>
+      </div>
+      <button class="load-btn" onclick="loadData()">Load from DB</button>
+    </div>
+  </div>
+
+  <div id="result-area" style="display:none">
+    <div class="preview-header">
+      <div>
+        <h3 id="result-title">—</h3>
+        <div class="preview-meta" id="result-meta"></div>
+      </div>
+      <div class="dl-buttons">
+        <button class="dl-btn dl-btn-cms" onclick="handleDownload('CMS-1500')">
+          <span class="dl-icon">↓</span>
+          <span class="dl-btn-label"><span>CMS-1500</span><span>PDF · 종이 청구 표준</span></span>
+        </button>
+        <button class="dl-btn dl-btn-csv" onclick="handleDownload('ClaimMD CSV')">
+          <span class="dl-icon">↓</span>
+          <span class="dl-btn-label"><span>ClaimMD CSV</span><span>전송 포맷</span></span>
+        </button>
+        <button class="dl-btn dl-btn-all" onclick="handleDownload('전체 일괄')">
+          <span class="dl-icon">↓</span>
+          <span class="dl-btn-label"><span>전체 일괄 다운로드</span><span>ZIP · CMS + CSV 포함</span></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total claims</div><div class="stat-value" id="st-total">—</div><div class="stat-sub" id="st-cpts">— CPT lines</div></div>
+      <div class="stat-card"><div class="stat-label">Total billed</div><div class="stat-value" id="st-billed">—</div></div>
+      <div class="stat-card"><div class="stat-label">Ready to submit</div><div class="stat-value" id="st-ready">—</div><div class="stat-sub">Pre-claim status</div></div>
+      <div class="stat-card"><div class="stat-label">Re-submit</div><div class="stat-value" id="st-resubmit">—</div><div class="stat-sub">Denied claims</div></div>
+    </div>
+
+    <div class="tbl-wrap">
+      <div id="sel-bar" style="display:none" class="sel-bar">
+        <span class="sel-bar-count" id="sel-count">0 selected</span>
+        <button class="sel-dl-btn" onclick="handleDownload('CMS-1500 (selected)')">↓ CMS-1500</button>
+        <button class="sel-dl-btn" onclick="handleDownload('ClaimMD CSV (selected)')">↓ ClaimMD CSV</button>
+        <span style="margin-left:auto;cursor:pointer;color:#185FA5" onclick="clearSelection()">Clear selection</span>
+      </div>
+      <div class="tbl-toolbar">
+        <input type="text" id="tbl-search" placeholder="Search patient or claim ID..." oninput="renderClaimTable()"/>
+        <select id="tbl-status" onchange="renderClaimTable()">
+          <option value="">Status: All</option>
+          <option value="Pre-claim">Pre-claim</option>
+          <option value="Pending">Pending</option>
+          <option value="Denied">Denied</option>
+        </select>
+        <span class="tbl-count" id="tbl-count"></span>
+        <span class="sel-all" onclick="selectAll()">Select all</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th style="width:32px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)"/></th>
+          <th style="width:82px">Claim ID</th>
+          <th style="width:145px">Patient</th>
+          <th style="width:130px">Medicare ID</th>
+          <th style="width:50px">CPTs</th>
+          <th style="width:78px">Billed</th>
+          <th style="width:90px">Status</th>
+          <th style="width:72px">Date</th>
+          <th style="width:90px">Form ready</th>
+        </tr></thead>
+        <tbody id="claim-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="empty-state" class="empty-state">
+    <div class="empty-icon">↓</div>
+    <div>클리닉과 월을 선택한 후 <strong>Load from DB</strong>를 클릭하면<br/>해당 기간의 billing report를 불러옵니다.</div>
+  </div>
+</div>
+
+<script>
+const allClaims = [
+  {id:"CLM-0310",patient:"Margaret Collins",insId:"1EG4-TE5-MK72",clinic:"Sunrise Health Center",month:"2025-03",date:"2025-03-05",status:"Pre-claim",cpts:[{code:"99453"},{code:"99454"},{code:"99457"},{code:"99458"},{code:"99490"},{code:"99439"}],totalBilled:275},
+  {id:"CLM-0311",patient:"Robert Nguyen",insId:"2WX9-AB3-LP41",clinic:"Sunrise Health Center",month:"2025-03",date:"2025-03-06",status:"Partial",cpts:[{code:"99457"},{code:"99458"}],totalBilled:87},
+  {id:"CLM-0312",patient:"Dorothy Simmons",insId:"3RT2-CV7-NQ88",clinic:"Westside Clinic",month:"2025-03",date:"2025-03-07",status:"Denied",cpts:[{code:"99490"},{code:"99439"}],totalBilled:117},
+  {id:"CLM-0313",patient:"James Watkins",insId:"4MN5-GH1-SR63",clinic:"Westside Clinic",month:"2025-03",date:"2025-03-08",status:"Pre-claim",cpts:[{code:"99453"},{code:"99454"},{code:"99490"}],totalBilled:141},
+  {id:"CLM-0314",patient:"Patricia Lawson",insId:"5YK8-JL4-DP27",clinic:"Lakeview Medical",month:"2025-03",date:"2025-03-10",status:"Pending",cpts:[{code:"99454"},{code:"99457"}],totalBilled:103},
+  {id:"CLM-0315",patient:"Harold Freeman",insId:"6QZ3-PW9-UM54",clinic:"Lakeview Medical",month:"2025-03",date:"2025-03-11",status:"Pre-claim",cpts:[{code:"99490"},{code:"99439"}],totalBilled:114},
+  {id:"CLM-0316",patient:"Barbara Chen",insId:"7BF6-KT2-HV39",clinic:"Pacific Care Group",month:"2025-03",date:"2025-03-12",status:"Pre-claim",cpts:[{code:"99490"},{code:"99439"},{code:"99453"}],totalBilled:133},
+  {id:"CLM-0317",patient:"Harold Freeman",insId:"6QZ3-PW9-UM54",clinic:"Lakeview Medical",month:"2025-02",date:"2025-02-11",status:"Paid",cpts:[{code:"99490"},{code:"99439"}],totalBilled:114},
+  {id:"CLM-0318",patient:"Barbara Chen",insId:"7BF6-KT2-HV39",clinic:"Pacific Care Group",month:"2025-02",date:"2025-02-14",status:"Pre-claim",cpts:[{code:"99490"},{code:"99453"}],totalBilled:86},
+];
+
+let loaded = [];
+let selected = new Set();
+
+function statusBadge(s){
+  const m={"Pre-claim":"b-pre","Pending":"b-pend","Paid":"b-paid","Denied":"b-deny","Partial":"b-part"};
+  return `<span class="badge ${m[s]||'b-pend'}">${s}</span>`;
+}
+function formReadyBadge(s){
+  if(s==="Pre-claim"||s==="Denied") return `<span class="badge b-ready">Ready</span>`;
+  return `<span class="badge" style="background:var(--color-background-secondary);color:var(--color-text-tertiary)">—</span>`;
+}
+
+function loadData(){
+  const clinic=document.getElementById('f-clinic').value;
+  const month=document.getElementById('f-month').value;
+  const status=document.getElementById('f-status').value;
+  if(!clinic||!month){alert('클리닉과 월을 선택해주세요.');return;}
+  loaded=allClaims.filter(c=>{
+    if(c.clinic!==clinic) return false;
+    if(c.month!==month) return false;
+    if(status&&c.status!==status) return false;
+    return true;
+  });
+  selected.clear();
+  const clinicName=clinic;
+  const monthLabel=document.getElementById('f-month').selectedOptions[0].text;
+  document.getElementById('result-title').textContent=`${clinicName} · ${monthLabel}`;
+  const totalCpts=loaded.reduce((a,c)=>a+c.cpts.length,0);
+  const totalBilled=loaded.reduce((a,c)=>a+c.totalBilled,0);
+  const ready=loaded.filter(c=>c.status==="Pre-claim").length;
+  const resubmit=loaded.filter(c=>c.status==="Denied").length;
+  document.getElementById('result-meta').textContent=`${loaded.length}개 claim · ${totalCpts} CPT lines · DB에서 불러옴`;
+  document.getElementById('st-total').textContent=loaded.length;
+  document.getElementById('st-cpts').textContent=totalCpts+' CPT lines';
+  document.getElementById('st-billed').textContent='$'+totalBilled.toLocaleString();
+  document.getElementById('st-ready').textContent=ready;
+  document.getElementById('st-resubmit').textContent=resubmit;
+  document.getElementById('result-area').style.display='block';
+  document.getElementById('empty-state').style.display='none';
+  renderClaimTable();
+}
+
+function getTableData(){
+  const sr=(document.getElementById('tbl-search').value||'').toLowerCase();
+  const st=document.getElementById('tbl-status').value;
+  return loaded.filter(c=>{
+    if(st&&c.status!==st) return false;
+    if(sr&&!c.patient.toLowerCase().includes(sr)&&!c.id.toLowerCase().includes(sr)) return false;
+    return true;
+  });
+}
+
+function renderClaimTable(){
+  const data=getTableData();
+  document.getElementById('tbl-count').textContent=data.length+' claims';
+  const tbody=document.getElementById('claim-tbody');
+  tbody.innerHTML='';
+  data.forEach(c=>{
+    const chips=c.cpts.map(x=>`<span style="font-family:var(--font-mono);font-size:10px;padding:1px 5px;border:0.5px solid var(--color-border-secondary);border-radius:4px;margin-right:2px">${x.code}</span>`).join('');
+    const tr=document.createElement('tr');
+    tr.className=selected.has(c.id)?'selected':'';
+    tr.innerHTML=`
+      <td><input type="checkbox" ${selected.has(c.id)?'checked':''} onchange="toggleRow('${c.id}',this)"/></td>
+      <td style="font-family:var(--font-mono);font-size:11px;color:var(--color-text-secondary)">${c.id}</td>
+      <td style="font-weight:500">${c.patient}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;color:var(--color-text-secondary)">${c.insId}</td>
+      <td style="text-align:center;color:var(--color-text-secondary)">${c.cpts.length}</td>
+      <td style="font-weight:500">$${c.totalBilled.toFixed(2)}</td>
+      <td>${statusBadge(c.status)}</td>
+      <td style="color:var(--color-text-tertiary);font-size:11px">${c.date}</td>
+      <td>${formReadyBadge(c.status)}</td>`;
+    tbody.appendChild(tr);
+  });
+  updateSelBar();
+}
+
+function toggleRow(id,chk){
+  if(chk.checked) selected.add(id); else selected.delete(id);
+  renderClaimTable();
+}
+function toggleAll(chk){
+  const data=getTableData();
+  if(chk.checked) data.forEach(c=>selected.add(c.id)); else data.forEach(c=>selected.delete(c.id));
+  renderClaimTable();
+}
+function selectAll(){
+  getTableData().forEach(c=>selected.add(c.id));
+  renderClaimTable();
+}
+function clearSelection(){
+  selected.clear();
+  renderClaimTable();
+}
+function updateSelBar(){
+  const bar=document.getElementById('sel-bar');
+  bar.style.display=selected.size>0?'flex':'none';
+  document.getElementById('sel-count').textContent=selected.size+' selected';
+  document.getElementById('chk-all').checked=selected.size>0&&selected.size===getTableData().length;
+}
+function handleDownload(type){
+  const scope=selected.size>0?selected.size+'건 선택':loaded.length+'건 전체';
+  alert(`${type} 다운로드\n대상: ${scope}\n\n실제 구현 시 DB에서 해당 Claim 데이터를 읽어 양식을 생성합니다.`);
+}
+</script>

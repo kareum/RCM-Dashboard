@@ -1,0 +1,409 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.root { display: grid; grid-template-columns: 220px 1fr; min-height: 720px; font-family: var(--font-sans); color: var(--color-text-primary); }
+.sidebar { border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; background: var(--color-background-primary); }
+.sb-head { padding: 14px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.sb-head-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sb-head-top span { font-size: 13px; font-weight: 500; }
+.sb-count { font-size: 11px; color: var(--color-text-tertiary); }
+.search-box { display: flex; align-items: center; gap: 7px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 6px 9px; background: var(--color-background-secondary); }
+.search-box input { border: none; background: transparent; font-size: 12px; color: var(--color-text-primary); width: 100%; outline: none; }
+.clinic-list { flex: 1; overflow-y: auto; }
+.clinic-item { padding: 9px 14px; cursor: pointer; border-bottom: 0.5px solid var(--color-border-tertiary); transition: background 0.1s; }
+.clinic-item:hover { background: var(--color-background-secondary); }
+.clinic-item.active { background: #E6F1FB; border-right: 2px solid #185FA5; }
+.ci-name { font-size: 12px; font-weight: 500; }
+.clinic-item.active .ci-name { color: #0C447C; }
+.ci-meta { font-size: 10px; color: var(--color-text-tertiary); margin-top: 2px; }
+.clinic-item.active .ci-meta { color: #185FA5; }
+
+.main { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.topbar-left h2 { font-size: 16px; font-weight: 500; }
+.mode-badge { font-size: 11px; padding: 3px 9px; border-radius: var(--border-radius-md); font-weight: 500; }
+.mode-curr { background: #E6F1FB; color: #0C447C; }
+.mode-past { background: #F1EFE8; color: #5F5E5A; }
+.month-nav { display: flex; align-items: center; gap: 6px; }
+.month-nav button { background: none; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 4px 9px; cursor: pointer; color: var(--color-text-secondary); font-size: 13px; }
+.month-nav span { font-weight: 500; min-width: 90px; text-align: center; font-size: 13px; }
+
+.flow-bar { display: flex; align-items: center; margin-bottom: 14px; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+.flow-step { flex: 1; padding: 7px 10px; background: var(--color-background-secondary); border-right: 0.5px solid var(--color-border-tertiary); }
+.flow-step:last-child { border-right: none; }
+.fl { font-size: 10px; color: var(--color-text-tertiary); margin-bottom: 2px; }
+.fv { font-size: 12px; font-weight: 500; }
+.flow-step.hl { background: #E6F1FB; }
+.flow-step.hl .fl { color: #185FA5; }
+.flow-step.hl .fv { color: #0C447C; }
+.fa { font-size: 10px; color: var(--color-text-tertiary); padding: 0 1px; background: var(--color-background-secondary); border-right: 0.5px solid var(--color-border-tertiary); align-self: stretch; display: flex; align-items: center; }
+
+.sum-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px; }
+.sc { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; }
+.sc-lbl { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
+.sc-val { font-size: 19px; font-weight: 500; }
+.sc-sub { font-size: 10px; color: var(--color-text-tertiary); margin-top: 2px; }
+.pills { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.pill { font-size: 10px; padding: 2px 6px; border-radius: var(--border-radius-md); }
+.p-pre  { background: #EEEDFE; color: #3C3489; }
+.p-pend { background: #E6F1FB; color: #0C447C; }
+.p-paid { background: #EAF3DE; color: #27500A; }
+.p-deny { background: #FCEBEB; color: #791F1F; }
+.p-part { background: #FAEEDA; color: #633806; }
+.aging-rows { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+.ar { display: flex; align-items: center; gap: 5px; font-size: 10px; }
+.aw { flex: 1; height: 5px; background: var(--color-border-tertiary); border-radius: 3px; overflow: hidden; }
+.ab { height: 100%; border-radius: 3px; }
+.a30{background:#639922;} .a60{background:#BA7517;} .a90{background:#E24B4A;}
+.aa { min-width: 40px; text-align: right; color: var(--color-text-secondary); font-size: 10px; }
+
+.toolbar { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; flex-wrap: wrap; }
+.toolbar select, .toolbar input[type=text] { font-size: 12px; padding: 6px 9px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); }
+.toolbar input[type=text] { width: 160px; }
+.tbtn { font-size: 11px; padding: 6px 11px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); cursor: pointer; white-space: nowrap; }
+.tbtn-primary { border-color: #185FA5; background: #E6F1FB; color: #0C447C; font-weight: 500; }
+.tbtn-purple  { border-color: #534AB7; background: #EEEDFE; color: #3C3489; font-weight: 500; }
+.tbtn-green   { border-color: #3B6D11; background: #EAF3DE; color: #27500A; font-weight: 500; }
+.tbtn-disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+.tcount { font-size: 11px; color: var(--color-text-tertiary); margin-left: auto; }
+
+.sel-bar { display: flex; align-items: center; gap: 10px; padding: 7px 12px; background: #E6F1FB; border-bottom: 0.5px solid #B5D4F4; font-size: 12px; color: #0C447C; }
+.sel-bar-count { font-weight: 500; }
+.sel-clear { font-size: 11px; cursor: pointer; color: #185FA5; margin-left: auto; }
+
+.body { display: flex; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; flex: 1; }
+.list-pane { flex: 1; min-width: 0; overflow-x: auto; }
+.side-pane { width: 0; overflow: hidden; border-left: 0.5px solid var(--color-border-tertiary); transition: width 0.2s; background: var(--color-background-primary); flex-shrink: 0; }
+.side-pane.open { width: 380px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
+thead th { font-size: 10px; font-weight: 500; color: var(--color-text-secondary); text-align: left; padding: 8px 9px; background: var(--color-background-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+tbody tr { cursor: pointer; transition: background 0.1s; }
+tbody tr:hover td { background: var(--color-background-secondary); }
+tbody tr.active td { background: #E6F1FB; }
+tbody tr.row-selected td { background: #EAF3DE20; }
+tbody tr.row-selected:hover td { background: #EAF3DE40; }
+tbody td { padding: 8px 9px; border-top: 0.5px solid var(--color-border-tertiary); vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.badge { font-size: 10px; padding: 2px 6px; border-radius: var(--border-radius-md); display: inline-block; white-space: nowrap; }
+.b-pre  { background: #EEEDFE; color: #3C3489; }
+.b-pend { background: #E6F1FB; color: #0C447C; }
+.b-paid { background: #EAF3DE; color: #27500A; }
+.b-deny { background: #FCEBEB; color: #791F1F; }
+.b-part { background: #FAEEDA; color: #633806; }
+.b-era-y{ background: #EAF3DE; color: #27500A; }
+.b-era-n{ background: #F1EFE8; color: #5F5E5A; }
+
+.sp-hdr { display: flex; align-items: center; justify-content: space-between; padding: 11px 13px; border-bottom: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); }
+.sp-hdr h3 { font-size: 12px; font-weight: 500; }
+.sp-x { font-size: 14px; color: var(--color-text-tertiary); cursor: pointer; background: none; border: none; padding: 2px 5px; }
+.sp-body { padding: 13px; overflow-y: auto; max-height: 580px; }
+.sp-sec { margin-bottom: 13px; }
+.sp-lbl { font-size: 10px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 7px; }
+.info-tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
+.info-tbl td { padding: 3px 0; }
+.info-tbl td:first-child { color: var(--color-text-secondary); width: 100px; }
+.cpt-tbl { width: 100%; border-collapse: collapse; font-size: 11px; }
+.cpt-tbl th { font-size: 10px; color: var(--color-text-tertiary); font-weight: 400; text-align: left; padding: 0 6px 5px; }
+.cpt-tbl td { padding: 5px 6px; border-top: 0.5px solid var(--color-border-tertiary); }
+.cpt-tbl tfoot td { font-weight: 500; border-top: 1px solid var(--color-border-secondary); }
+.era-box { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 9px 11px; }
+.era-row { display: flex; justify-content: space-between; font-size: 11px; padding: 2px 0; }
+.era-row span:first-child { color: var(--color-text-secondary); }
+.era-deny { background: #FCEBEB; border-radius: var(--border-radius-md); padding: 6px 9px; font-size: 11px; color: #791F1F; margin-top: 5px; }
+.pre-box { background: #EEEDFE; border-radius: var(--border-radius-md); padding: 8px 10px; font-size: 11px; color: #3C3489; }
+.inv-box { border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 9px 11px; background: var(--color-background-secondary); font-size: 11px; color: var(--color-text-tertiary); text-align: center; }
+.sp-btn { width: 100%; font-size: 11px; padding: 7px 9px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); cursor: pointer; margin-bottom: 5px; text-align: left; }
+.sp-btn-primary { border-color: #185FA5; background: #E6F1FB; color: #0C447C; font-weight: 500; }
+.sp-btn-purple  { border-color: #534AB7; background: #EEEDFE; color: #3C3489; font-weight: 500; }
+.sp-btn-warn    { border-color: #EF9F27; background: #FAEEDA; color: #633806; }
+</style>
+
+<div class="root">
+  <div class="sidebar">
+    <div class="sb-head">
+      <div class="sb-head-top">
+        <span>Clinics</span>
+        <span class="sb-count" id="sb-count">22 clinics</span>
+      </div>
+      <div class="search-box">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4;flex-shrink:0"><circle cx="6.5" cy="6.5" r="4"/><path d="M10.5 10.5L14 14" stroke-linecap="round"/></svg>
+        <input id="clinic-search" placeholder="Search clinic..." oninput="filterClinics(this.value)"/>
+      </div>
+    </div>
+    <div class="clinic-list" id="clinic-list"></div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h2 id="main-title">Sunrise Health Center</h2>
+        <span class="mode-badge mode-curr" id="mode-badge">이번 달 — 청구 모드</span>
+      </div>
+      <div class="month-nav">
+        <button onclick="changeMonth(-1)">‹</button>
+        <span id="month-lbl">March 2025</span>
+        <button onclick="changeMonth(1)">›</button>
+      </div>
+    </div>
+
+    <div class="flow-bar">
+      <div class="flow-step hl"><div class="fl">1. Billing data</div><div class="fv">DB에서 읽기</div></div>
+      <div class="fa">›</div>
+      <div class="flow-step"><div class="fl">2. Pre-claim</div><div class="fv" id="f2">—</div></div>
+      <div class="fa">›</div>
+      <div class="flow-step"><div class="fl">3. ClaimMD 제출</div><div class="fv" id="f3">—</div></div>
+      <div class="fa">›</div>
+      <div class="flow-step"><div class="fl">4. ERA 매칭</div><div class="fv" id="f4">—</div></div>
+      <div class="fa">›</div>
+      <div class="flow-step"><div class="fl">5. 확정</div><div class="fv" id="f5">—</div></div>
+    </div>
+
+    <div class="sum-grid">
+      <div class="sc"><div class="sc-lbl">Total billed</div><div class="sc-val" id="s-total">$0</div><div class="sc-sub" id="s-claims">0 claims</div></div>
+      <div class="sc"><div class="sc-lbl">Claim status</div><div class="pills" id="s-pills"></div></div>
+      <div class="sc"><div class="sc-lbl">AR Aging (보험사)</div><div class="aging-rows" id="s-aging"></div></div>
+      <div class="sc"><div class="sc-lbl">미수금 (보험사)</div><div class="sc-val" id="s-out">$0</div><div class="sc-sub">unpaid by insurer</div></div>
+    </div>
+
+    <div class="toolbar">
+      <select id="sf-status" onchange="renderTable()">
+        <option value="">Status: All</option>
+        <option value="Pre-claim">Pre-claim</option>
+        <option value="Pending">Pending</option>
+        <option value="Paid">Paid</option>
+        <option value="Denied">Denied</option>
+        <option value="Partial">Partial</option>
+      </select>
+      <select id="sf-era" onchange="renderTable()">
+        <option value="">ERA: All</option>
+        <option value="Matched">Matched</option>
+        <option value="Unmatched">Unmatched</option>
+      </select>
+      <input type="text" id="sf-search" placeholder="Search patient or claim ID..." oninput="renderTable()"/>
+      <button class="tbtn tbtn-purple" id="submit-btn">→ Submit all pre-claims</button>
+      <button class="tbtn tbtn-green tbtn-disabled" id="dl-csv-btn" onclick="handleDownload('CSV')">↓ CSV</button>
+      <button class="tbtn tbtn-primary tbtn-disabled" id="dl-excel-btn" onclick="handleDownload('Excel')">↓ Excel</button>
+      <span class="tcount" id="tbl-count"></span>
+    </div>
+
+    <div class="body">
+      <div class="list-pane">
+        <div id="sel-bar" style="display:none" class="sel-bar">
+          <span class="sel-bar-count" id="sel-count">0 selected</span>
+          <button class="tbtn tbtn-green" style="font-size:11px;padding:4px 10px" onclick="handleDownload('CSV')">↓ CSV</button>
+          <button class="tbtn tbtn-primary" style="font-size:11px;padding:4px 10px" onclick="handleDownload('Excel')">↓ Excel</button>
+          <span class="sel-clear" onclick="clearSel()">Clear selection</span>
+        </div>
+        <table>
+          <thead><tr>
+            <th style="width:28px"><input type="checkbox" id="chk-all" onchange="toggleAll(this)"/></th>
+            <th style="width:80px">Claim ID</th>
+            <th style="width:130px">Patient</th>
+            <th style="width:44px">CPTs</th>
+            <th style="width:74px">Billed</th>
+            <th style="width:68px">Ins. paid</th>
+            <th style="width:62px">Balance</th>
+            <th style="width:88px">Status</th>
+            <th style="width:68px">ERA</th>
+            <th style="width:70px">Date</th>
+          </tr></thead>
+          <tbody id="claim-tbody"></tbody>
+        </table>
+      </div>
+      <div class="side-pane" id="side-pane">
+        <div class="sp-hdr">
+          <h3 id="sp-title">Claim detail</h3>
+          <button class="sp-x" onclick="closePanel()">✕</button>
+        </div>
+        <div class="sp-body" id="sp-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MONTHS=["January 2025","February 2025","March 2025","April 2025"];
+let monthIdx=2, selClinic="Sunrise Health Center", selId=null;
+const selected=new Set();
+
+const allClinics=[
+  {name:"Sunrise Health Center",state:"CA",services:"RPM, CCM"},
+  {name:"Westside Clinic",state:"CA",services:"RPM"},
+  {name:"Lakeview Medical",state:"TX",services:"CCM"},
+  {name:"Pacific Care Group",state:"CA",services:"RPM, CCM"},
+  {name:"Northside Family Health",state:"NY",services:"RPM"},
+  {name:"Summit Wellness Center",state:"WA",services:"RPM, CCM"},
+  {name:"Greenfield Medical",state:"FL",services:"CCM"},
+  {name:"Riverside Health",state:"TX",services:"RPM, CCM"},
+  {name:"Harbor View Clinic",state:"CA",services:"RPM"},
+  {name:"Midtown Medical Group",state:"NY",services:"RPM, CCM"},
+  {name:"Valley Primary Care",state:"AZ",services:"CCM"},
+  {name:"Eastside Health Partners",state:"IL",services:"RPM"},
+  {name:"Coastal Family Medicine",state:"CA",services:"RPM, CCM"},
+  {name:"Brookside Internal Med",state:"OH",services:"CCM"},
+  {name:"Central Park Clinic",state:"NY",services:"RPM, CCM"},
+  {name:"Desert Springs Medical",state:"NV",services:"RPM"},
+  {name:"Pinecrest Health Center",state:"GA",services:"RPM, CCM"},
+  {name:"Bayside Community Clinic",state:"CA",services:"CCM"},
+  {name:"Maple Grove Medical",state:"MN",services:"RPM, CCM"},
+  {name:"Hillcrest Family Practice",state:"CO",services:"RPM"},
+  {name:"Lakewood Health Assoc.",state:"WA",services:"RPM, CCM"},
+  {name:"Sunnyvale Primary Care",state:"CA",services:"CCM"},
+];
+
+const claims=[
+  {id:"CLM-0310",patient:"Margaret Collins",clinic:"Sunrise Health Center",month:"2025-03",date:"2025-03-05",dob:"1948-03-12",insId:"1EG4-TE5-MK72",status:"Pre-claim",era:"Unmatched",agingDays:25,cpts:[{code:"99453",desc:"RPM setup",billed:19,paid:0,adj:null},{code:"99454",desc:"RPM device",billed:55,paid:0,adj:null},{code:"99457",desc:"RPM mgmt",billed:48,paid:0,adj:null},{code:"99458",desc:"RPM add-on",billed:39,paid:0,adj:null},{code:"99490",desc:"CCM 20 min",billed:67,paid:0,adj:null},{code:"99439",desc:"CCM add-on",billed:47,paid:0,adj:null}]},
+  {id:"CLM-0311",patient:"Robert Nguyen",clinic:"Sunrise Health Center",month:"2025-03",date:"2025-03-06",dob:"1952-07-28",insId:"2WX9-AB3-LP41",status:"Partial",era:"Matched",agingDays:18,eraDetail:{paidAmt:30,adjAmt:57,adjReason:"CO-45: Charge exceeds fee schedule",checkNo:"CHK-8822",eraDate:"2025-03-19"},cpts:[{code:"99457",desc:"RPM mgmt",billed:48,paid:30,adj:"CO-45"},{code:"99458",desc:"RPM add-on",billed:39,paid:0,adj:"PR-96"}]},
+  {id:"CLM-0312",patient:"Dorothy Simmons",clinic:"Westside Clinic",month:"2025-03",date:"2025-03-07",dob:"1945-11-03",insId:"3RT2-CV7-NQ88",status:"Denied",era:"Matched",agingDays:17,eraDetail:{paidAmt:0,adjAmt:117,adjReason:"CO-4: Service not covered by plan",checkNo:"CHK-8823",eraDate:"2025-03-20"},cpts:[{code:"99490",desc:"CCM 20 min",billed:70,paid:0,adj:"CO-4"},{code:"99439",desc:"CCM add-on",billed:47,paid:0,adj:"CO-4"}]},
+  {id:"CLM-0313",patient:"James Watkins",clinic:"Westside Clinic",month:"2025-03",date:"2025-03-08",dob:"1938-05-16",insId:"4MN5-GH1-SR63",status:"Paid",era:"Matched",agingDays:16,eraDetail:{paidAmt:141,adjAmt:0,adjReason:null,checkNo:"CHK-8824",eraDate:"2025-03-21"},cpts:[{code:"99453",desc:"RPM setup",billed:19,paid:19,adj:null},{code:"99454",desc:"RPM device",billed:55,paid:55,adj:null},{code:"99490",desc:"CCM 20 min",billed:67,paid:67,adj:null}]},
+  {id:"CLM-0314",patient:"Patricia Lawson",clinic:"Lakeview Medical",month:"2025-03",date:"2025-03-10",dob:"1955-09-22",insId:"5YK8-JL4-DP27",status:"Pending",era:"Unmatched",agingDays:14,cpts:[{code:"99454",desc:"RPM device",billed:55,paid:0,adj:null},{code:"99457",desc:"RPM mgmt",billed:48,paid:0,adj:null}]},
+  {id:"CLM-0315",patient:"Harold Freeman",clinic:"Lakeview Medical",month:"2025-03",date:"2025-03-11",dob:"1943-01-30",insId:"6QZ3-PW9-UM54",status:"Paid",era:"Matched",agingDays:13,eraDetail:{paidAmt:114,adjAmt:0,adjReason:null,checkNo:"CHK-8825",eraDate:"2025-03-22"},cpts:[{code:"99490",desc:"CCM 20 min",billed:67,paid:67,adj:null},{code:"99439",desc:"CCM add-on",billed:47,paid:47,adj:null}]},
+  {id:"CLM-0316",patient:"Barbara Chen",clinic:"Pacific Care Group",month:"2025-03",date:"2025-03-12",dob:"1960-04-08",insId:"7BF6-KT2-HV39",status:"Pre-claim",era:"Unmatched",agingDays:12,cpts:[{code:"99490",desc:"CCM 20 min",billed:67,paid:0,adj:null},{code:"99439",desc:"CCM add-on",billed:47,paid:0,adj:null},{code:"99453",desc:"RPM setup",billed:19,paid:0,adj:null}]},
+];
+claims.forEach(c=>{c.totalBilled=c.cpts.reduce((a,x)=>a+x.billed,0);c.totalPaid=c.cpts.reduce((a,x)=>a+x.paid,0);});
+
+function sBadge(s){const m={"Pre-claim":"b-pre","Pending":"b-pend","Paid":"b-paid","Denied":"b-deny","Partial":"b-part"};return `<span class="badge ${m[s]||'b-pend'}">${s}</span>`;}
+function eraBadge(e){return e==="Matched"?`<span class="badge b-era-y">Matched</span>`:`<span class="badge b-era-n">—</span>`;}
+const isCurrent=()=>monthIdx===2;
+
+function updateSelUI(){
+  const n=selected.size;
+  const bar=document.getElementById('sel-bar');
+  bar.style.display=n>0?'flex':'none';
+  if(n>0) document.getElementById('sel-count').textContent=n+' selected';
+  ['dl-csv-btn','dl-excel-btn'].forEach(id=>{
+    const btn=document.getElementById(id);
+    if(btn){btn.classList.toggle('tbtn-disabled',n===0);}
+  });
+  const fc=getFiltered();
+  const chkAll=document.getElementById('chk-all');
+  if(chkAll) chkAll.checked=fc.length>0&&fc.every(c=>selected.has(c.id));
+}
+
+function toggleRow(id,checked){
+  if(checked) selected.add(id); else selected.delete(id);
+  updateSelUI();
+}
+function toggleAll(chk){
+  getFiltered().forEach(c=>{if(chk.checked) selected.add(c.id); else selected.delete(c.id);});
+  renderTable();
+}
+function clearSel(){selected.clear();renderTable();}
+function handleDownload(type){
+  const ids=[...selected];
+  if(!ids.length){alert('No claims selected.');return;}
+  alert(`${type} download\n선택된 ${ids.length}건: ${ids.join(', ')}`);
+}
+
+function renderClinics(filter=''){
+  const list=document.getElementById('clinic-list');
+  const filtered=allClinics.filter(c=>c.name.toLowerCase().includes(filter.toLowerCase())||c.state.toLowerCase().includes(filter.toLowerCase()));
+  document.getElementById('sb-count').textContent=filtered.length+' clinics';
+  list.innerHTML='';
+  if(!filtered.length){list.innerHTML='<div style="padding:20px;text-align:center;font-size:12px;color:var(--color-text-tertiary)">No results</div>';return;}
+  filtered.forEach(c=>{
+    const cc=claims.filter(x=>x.clinic===c.name).length;
+    const el=document.createElement('div');
+    el.className='clinic-item'+(c.name===selClinic?' active':'');
+    el.innerHTML=`<div class="ci-name">${c.name}</div><div class="ci-meta">${c.state} · ${c.services} · ${cc} claims</div>`;
+    el.onclick=()=>{selClinic=c.name;selId=null;selected.clear();document.getElementById('side-pane').classList.remove('open');document.getElementById('main-title').textContent=c.name;renderClinics(document.getElementById('clinic-search').value);renderAll();};
+    list.appendChild(el);
+  });
+}
+
+function filterClinics(v){renderClinics(v);}
+function changeMonth(d){
+  monthIdx=Math.max(0,Math.min(MONTHS.length-1,monthIdx+d));
+  document.getElementById('month-lbl').textContent=MONTHS[monthIdx];
+  const cur=isCurrent();
+  const b=document.getElementById('mode-badge');
+  b.textContent=cur?'이번 달 — 청구 모드':'지난달 — 현황 조회';
+  b.className='mode-badge '+(cur?'mode-curr':'mode-past');
+  document.getElementById('submit-btn').style.display=cur?'':'none';
+  renderAll();
+}
+
+function getScope(){return claims.filter(c=>c.clinic===selClinic);}
+function getFiltered(){
+  const st=document.getElementById('sf-status').value;
+  const er=document.getElementById('sf-era').value;
+  const sr=(document.getElementById('sf-search').value||'').toLowerCase();
+  return getScope().filter(c=>{if(st&&c.status!==st)return false;if(er&&c.era!==er)return false;if(sr&&!c.patient.toLowerCase().includes(sr)&&!c.id.toLowerCase().includes(sr))return false;return true;});
+}
+
+function renderSummary(){
+  const sc=getScope();
+  const total=sc.reduce((a,c)=>a+c.totalBilled,0);
+  const out=sc.filter(c=>c.status!=="Paid").reduce((a,c)=>a+(c.totalBilled-c.totalPaid),0);
+  document.getElementById('s-total').textContent='$'+total.toLocaleString();
+  document.getElementById('s-claims').textContent=sc.length+' claims';
+  document.getElementById('s-out').textContent='$'+Math.round(out).toLocaleString();
+  const cnt={};["Pre-claim","Pending","Paid","Denied","Partial"].forEach(s=>cnt[s]=sc.filter(c=>c.status===s).length);
+  document.getElementById('s-pills').innerHTML=`<span class="pill p-pre">Pre ${cnt["Pre-claim"]}</span><span class="pill p-pend">Pend ${cnt["Pending"]}</span><span class="pill p-paid">Paid ${cnt["Paid"]}</span><span class="pill p-deny">Den ${cnt["Denied"]}</span><span class="pill p-part">Part ${cnt["Partial"]}</span>`;
+  document.getElementById('f2').textContent=cnt["Pre-claim"]+" claims";
+  document.getElementById('f3').textContent=cnt["Pending"]+" pending";
+  document.getElementById('f4').textContent=(cnt["Paid"]+cnt["Denied"]+cnt["Partial"])+" matched";
+  document.getElementById('f5').textContent=cnt["Paid"]+" paid";
+  const a30=sc.filter(c=>c.agingDays<=30&&c.status!=="Paid").reduce((a,c)=>a+(c.totalBilled-c.totalPaid),0);
+  const a60=sc.filter(c=>c.agingDays>30&&c.agingDays<=60&&c.status!=="Paid").reduce((a,c)=>a+(c.totalBilled-c.totalPaid),0);
+  const a90=sc.filter(c=>c.agingDays>60&&c.status!=="Paid").reduce((a,c)=>a+(c.totalBilled-c.totalPaid),0);
+  const mx=Math.max(a30,a60,a90,1);
+  document.getElementById('s-aging').innerHTML=[{l:'0–30',v:a30,c:'a30'},{l:'31–60',v:a60,c:'a60'},{l:'61–90',v:a90,c:'a90'}].map(r=>`<div class="ar"><span style="width:30px;color:var(--color-text-tertiary)">${r.l}</span><div class="aw"><div class="ab ${r.c}" style="width:${Math.round(r.v/mx*100)}%"></div></div><span class="aa">$${Math.round(r.v)}</span></div>`).join('');
+}
+
+function renderTable(){
+  const fc=getFiltered();
+  document.getElementById('tbl-count').textContent=fc.length+' claims';
+  const tbody=document.getElementById('claim-tbody');
+  tbody.innerHTML='';
+  fc.forEach(c=>{
+    const bal=c.totalBilled-c.totalPaid;
+    const isSel=selected.has(c.id);
+    const tr=document.createElement('tr');
+    tr.className=(selId===c.id?'active':'')+(isSel?' row-selected':'');
+    tr.innerHTML=`
+      <td onclick="event.stopPropagation()"><input type="checkbox" ${isSel?'checked':''} onchange="toggleRow('${c.id}',this.checked)"/></td>
+      <td style="font-family:var(--font-mono);font-size:10px;color:var(--color-text-secondary)">${c.id}</td>
+      <td style="font-weight:500">${c.patient}</td>
+      <td style="text-align:center;color:var(--color-text-secondary)">${c.cpts.length}</td>
+      <td style="font-weight:500">$${c.totalBilled.toFixed(2)}</td>
+      <td>${c.totalPaid>0?'$'+c.totalPaid.toFixed(2):'—'}</td>
+      <td style="${bal>0?'color:#791F1F':''}">$${bal.toFixed(2)}</td>
+      <td>${sBadge(c.status)}</td>
+      <td>${eraBadge(c.era)}</td>
+      <td style="color:var(--color-text-tertiary);font-size:10px">${c.date}</td>`;
+    tr.onclick=(e)=>{
+      if(e.target.type==='checkbox') return;
+      if(selId===c.id){closePanel();return;}
+      selId=c.id;
+      document.getElementById('side-pane').classList.add('open');
+      renderPanel(c); renderTable();
+    };
+    tbody.appendChild(tr);
+  });
+  updateSelUI();
+}
+
+function renderPanel(c){
+  document.getElementById('sp-title').textContent=c.id+' · '+c.patient;
+  const bal=c.totalBilled-c.totalPaid;
+  const cptRows=c.cpts.map(cpt=>{const b=cpt.billed-cpt.paid;return `<tr><td style="font-family:var(--font-mono);font-size:10px">${cpt.code}</td><td style="color:var(--color-text-secondary)">${cpt.desc}</td><td>$${cpt.billed.toFixed(2)}</td><td>${cpt.paid>0?'$'+cpt.paid.toFixed(2):'—'}</td><td style="${b>0?'color:#791F1F':''}">$${b.toFixed(2)}</td><td style="font-size:10px;color:var(--color-text-tertiary)">${cpt.adj||'—'}</td></tr>`;}).join('');
+  const eraHtml=c.status==="Pre-claim"?`<div class="pre-box">ClaimMD 제출 대기 중입니다.</div>`:c.eraDetail?`<div class="era-box"><div class="era-row"><span>Parse source</span><span>EOB PDF</span></div><div class="era-row"><span>Matched by</span><span style="font-family:var(--font-mono);font-size:10px">Medicare ID: ${c.insId}</span></div><div class="era-row"><span>ERA date</span><span>${c.eraDetail.eraDate}</span></div><div class="era-row"><span>Check / ACH</span><span style="font-family:var(--font-mono);font-size:10px">${c.eraDetail.checkNo}</span></div><div class="era-row"><span>Paid</span><span style="font-weight:500">$${c.eraDetail.paidAmt.toFixed(2)}</span></div><div class="era-row"><span>Adjustment</span><span>${c.eraDetail.adjAmt>0?'-$'+c.eraDetail.adjAmt.toFixed(2):'—'}</span></div>${c.eraDetail.adjReason?`<div class="era-deny">${c.eraDetail.adjReason}</div>`:''}</div>`:`<div style="font-size:11px;color:var(--color-text-tertiary);padding:5px 0">EOB 미수신 또는 매칭 대기 중.</div>`;
+  const isPast=!isCurrent();
+  const prevMonth=MONTHS[Math.max(0,monthIdx-1)];
+  const invHtml=isPast?`<button class="sp-btn sp-btn-primary" style="margin-bottom:6px">↗ ${prevMonth} Invoice 미리보기</button><div class="inv-box">현재 달 Invoice는 아직 생성되지 않습니다.<br><span style="font-size:10px">EOB 매칭 완료 후 Invoice & Payment에서 자동 생성됩니다.</span></div>`:`<div class="inv-box">현재 달 Invoice는 아직 생성되지 않습니다.<br><span style="font-size:10px">지난달 Invoice는 월 변경 후 확인하세요.</span></div>`;
+  const actions=c.status==="Pre-claim"?`<button class="sp-btn sp-btn-purple">→ Submit to ClaimMD</button><button class="sp-btn">✎ Edit claim</button>`:c.status==="Denied"?`<button class="sp-btn sp-btn-warn">→ Re-submit to ClaimMD</button><button class="sp-btn">✎ Edit claim</button>`:`<button class="sp-btn">✎ Edit claim</button>`;
+  document.getElementById('sp-body').innerHTML=`
+    <div class="sp-sec"><div class="sp-lbl">Claim info</div><table class="info-tbl"><tr><td>Patient</td><td style="font-weight:500">${c.patient}</td></tr><tr><td>DOB</td><td>${c.dob}</td></tr><tr><td>Medicare ID</td><td style="font-family:var(--font-mono);font-size:10px">${c.insId}</td></tr><tr><td>Clinic</td><td>${c.clinic}</td></tr><tr><td>Claim date</td><td>${c.date}</td></tr><tr><td>Status</td><td>${sBadge(c.status)}</td></tr><tr><td>AR aging</td><td>${c.agingDays} days</td></tr></table></div>
+    <div class="sp-sec"><div class="sp-lbl">CPT codes (${c.cpts.length})</div><table class="cpt-tbl"><thead><tr><th style="width:48px">Code</th><th>Desc</th><th style="width:48px">Billed</th><th style="width:44px">Paid</th><th style="width:46px">Bal.</th><th style="width:40px">Adj.</th></tr></thead><tbody>${cptRows}</tbody><tfoot><tr><td colspan="2" style="color:var(--color-text-secondary)">Total</td><td>$${c.totalBilled.toFixed(2)}</td><td>${c.totalPaid>0?'$'+c.totalPaid.toFixed(2):'—'}</td><td style="${bal>0?'color:#791F1F':''}">$${bal.toFixed(2)}</td><td></td></tr></tfoot></table></div>
+    <div class="sp-sec"><div class="sp-lbl">ERA / EOB 매칭</div>${eraHtml}</div>
+    <div class="sp-sec"><div class="sp-lbl">Invoice</div>${invHtml}</div>
+    <div class="sp-sec"><div class="sp-lbl">Actions</div>${actions}</div>`;
+}
+
+function closePanel(){selId=null;document.getElementById('side-pane').classList.remove('open');renderTable();}
+function renderAll(){renderSummary();renderTable();}
+renderClinics(); renderAll();
+</script>

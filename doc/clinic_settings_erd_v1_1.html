@@ -1,0 +1,100 @@
+
+<style>
+#erd svg { width: 100%; }
+</style>
+<div id="erd"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+    primaryColor: dark ? '#2a2a28' : '#f5f4ef',
+    primaryBorderColor: dark ? '#5f5e5a' : '#ddd6c5',
+    primaryTextColor: dark ? '#c2c0b6' : '#1a1918',
+  },
+});
+const diagram = `erDiagram
+  clinics {
+    uuid id PK
+    varchar name
+    varchar(3) code "UNIQUE · 대문자3자리 · 변경불가"
+    varchar(2) state
+    varchar timezone
+    varchar phone
+    text address
+    varchar contact_name
+    varchar ein "CMS-1500 Box25"
+    varchar npi "CMS-1500 Box33a"
+    varchar taxonomy_code "CMS-1500 Box33b"
+    varchar(2) pos_code "CMS-1500 Box24B"
+    boolean accept_assignment "CMS-1500 Box27"
+    varchar[] service_types "RPM·CCM·BHI·PCM"
+    jsonb emr_links "[{name url}]"
+    integer sort_order "sync수신값·드래그변경가능"
+    boolean is_active
+    timestamp last_synced_at
+    timestamp created_at
+  }
+
+  revenue_split_history {
+    uuid id PK
+    uuid clinic_id FK
+    varchar service_type "RPM·CCM·BHI·PCM 확장가능"
+    numeric clinic_pct
+    numeric hicare_pct
+    date effective_from "적용시작월"
+    varchar changed_by
+    timestamp changed_at
+  }
+
+  biller_fee_history {
+    uuid id PK
+    uuid clinic_id FK
+    varchar fee_type "pct or fixed"
+    numeric(8-2) fee_value "양수:차감 음수:회사부담"
+    date effective_from "적용시작월"
+    text note "마이너스사유등비고"
+    varchar changed_by
+    timestamp changed_at
+  }
+
+  clinics ||--o{ revenue_split_history : "1:N split 이력"
+  clinics ||--o{ biller_fee_history : "1:N fee 이력"
+`;
+
+const { svg } = await mermaid.render('erd-svg', diagram);
+document.getElementById('erd').innerHTML = svg;
+
+document.querySelectorAll('#erd svg .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [nums[0], nums[2], nums[4], nums[6]];
+  const ys = [nums[1], nums[3], nums[5], nums[7]];
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+
+document.querySelectorAll('#erd svg .row-rect-odd path, #erd svg .row-rect-even path').forEach(p => {
+  p.setAttribute('stroke', 'none');
+});
+</script>

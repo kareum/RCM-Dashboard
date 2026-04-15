@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Component Patterns | RCM Design System</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "surface":                  "#fcf9f8",
+          "surface-container-low":    "#f6f3f2",
+          "surface-container":        "#f0eded",
+          "surface-container-high":   "#eae7e7",
+          "primary":                  "#005dac",
+          "on-primary":               "#ffffff",
+          "tertiary":                 "#006c1b",
+          "tertiary-fixed":           "#98f994",
+          "tertiary-container":       "#278631",
+          "on-surface":               "#1b1c1c",
+          "on-surface-variant":       "#414752",
+          "outline-variant":          "#c1c6d4",
+        },
+        fontFamily: { sans: ["Inter", "sans-serif"] },
+        borderRadius: { DEFAULT: "0.125rem", lg: "0.25rem", xl: "0.5rem", full: "0.75rem" },
+      },
+    },
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  .material-symbols-outlined.filled { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+  /* 문서 전용 코드 블록 */
+  pre { background: #0f172a; color: #e2e8f0; border-radius: 0.5rem; padding: 1.25rem; font-size: 0.72rem; line-height: 1.7; overflow-x: auto; }
+  .token-tag    { color: #7dd3fc; }
+  .token-attr   { color: #86efac; }
+  .token-val    { color: #fde68a; }
+  .token-class  { color: #c4b5fd; }
+  .token-cmt    { color: #475569; font-style: italic; }
+</style>
+</head>
+
+<body class="bg-slate-100 text-on-surface min-h-screen">
+
+<!-- 문서 헤더 -->
+<div class="bg-white border-b border-slate-200 px-10 py-6">
+  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">RCM Dashboard · Design System</p>
+  <h1 class="text-2xl font-bold text-slate-900">Component Patterns</h1>
+  <p class="text-sm text-slate-500 mt-1">공통 UI 컴포넌트의 상태별 구조 및 Tailwind 클래스 정의. <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">design-tokens.md</code>의 토큰값 기반.</p>
+</div>
+
+<div class="max-w-5xl mx-auto px-10 py-10 space-y-16">
+
+
+  <!-- ════════════════════════════════════════
+       SECTION 1. SideNav
+  ════════════════════════════════════════ -->
+  <section>
+    <div class="mb-6">
+      <h2 class="text-lg font-bold text-slate-900">1. SideNav</h2>
+      <p class="text-sm text-slate-500 mt-1">전역 좌측 내비게이션. 너비 고정(w-64), 높이 전체(h-screen), position fixed. 다크 배경으로 "Command Center" 느낌.</p>
+    </div>
+
+    <!-- 프리뷰 -->
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-6">
+      <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Preview</span>
+        <div class="flex gap-4 text-[11px] text-slate-400">
+          <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-blue-500"></span>Selected</span>
+          <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-slate-300"></span>Default</span>
+          <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-slate-200 border border-dashed border-slate-400"></span>Hover (interactive)</span>
+        </div>
+      </div>
+
+      <div class="flex gap-0 p-6 bg-slate-200 justify-start">
+
+        <!-- ── SideNav: Clinic Settings 선택됨 ── -->
+        <div class="flex flex-col" style="width:256px">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3 px-1">Clinic Settings selected</p>
+          <aside class="bg-slate-900 rounded-xl flex flex-col overflow-hidden shadow-2xl" style="width:256px">
+            <!-- Logo -->
+            <div class="px-6 py-7">
+              <h1 class="text-lg font-bold tracking-tighter text-white">Precision Medical</h1>
+              <p class="text-[10px] uppercase tracking-widest text-slate-500 mt-0.5 font-semibold">Financial Intelligence</p>
+            </div>
+
+            <!-- Nav items -->
+            <nav class="flex-1 px-3 space-y-0.5">
+
+              <!-- Default -->
+              <a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-sm transition-all duration-200 cursor-pointer">
+                <span class="material-symbols-outlined text-[22px]">monitoring</span>
+                <span class="text-sm">Main Dashboard</span>
+              </a>
+
+              <!-- Selected -->
+              <a class="flex items-center gap-3 px-4 py-3 text-white bg-blue-600/20 border-r-4 border-blue-500 transition-all duration-200 cursor-pointer">
+                <span class="material-symbols-outlined text-[22px] text-blue-400 filled">medical_services</span>
+                <span class="text-sm font-semibold">Clinic Settings</span>
+              </a>
+
+              <!-- Default -->
+              <a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-sm transition-all duration-200 cursor-pointer">
+                <span class="material-symbols-outlined text-[22px]">receipt_long</span>
+                <span class="text-sm">Billing &amp; Settlement</span>
+              </a>
+
+            </nav>
+
+            <!-- User -->
+            <div class="p-4 mt-6">
+              <div class="flex items-center gap-3 px-2">
+                <div class="h-8 w-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">AR</div>
+                <div>
+                  <p class="text-xs font-bold text-white">Areum Kim</p>
+                  <p class="text-[10px] text-slate-500">Administrator</p>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <!-- 간격 -->
+        <div class="w-8"></div>
+
+        <!-- ── SideNav: Main Dashboard 선택됨 ── -->
+        <div class="flex flex-col" style="width:256px">
+          <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-3 px-1">Main Dashboard selected</p>
+          <aside class="bg-slate-900 rounded-xl flex flex-col overflow-hidden shadow-2xl" style="width:256px">
+            <div class="px-6 py-7">
+              <h1 class="text-lg font-bold tracking-tighter text-white">Precision Medical</h1>
+              <p class="text-[10px] uppercase tracking-widest text-slate-500 mt-0.5 font-semibold">Financial Intelligence</p>
+            </div>
+            <nav class="flex-1 px-3 space-y-0.5">
+              <!-- Selected -->
+              <a class="flex items-center gap-3 px-4 py-3 text-white bg-blue-600/20 border-r-4 border-blue-500 transition-all duration-200 cursor-pointer">
+                <span class="material-symbols-outlined text-[22px] text-blue-400 filled">monitoring</span>
+                <span class="text-sm font-semibold">Main Dashboard</span>
+              </a>
+              <!-- Default -->
+              <a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-sm transition-all duration-200 cursor-pointer">
+                <span class="material-symbols-outlined text-[22px]">medical_services</span>
+                <span class="text-sm">Clinic Settings</span>
+              </a>
+              <!-- Default -->
+              <a class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-sm transition-all duration-200 cursor-pointer">
+                <span class="material-symbols-outlined text-[22px]">receipt_long</span>
+                <span class="text-sm">Billing &amp; Settlement</span>
+              </a>
+            </nav>
+            <div class="p-4 mt-6">
+              <div class="flex items-center gap-3 px-2">
+                <div class="h-8 w-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">AR</div>
+                <div>
+                  <p class="text-xs font-bold text-white">Areum Kim</p>
+                  <p class="text-[10px] text-slate-500">Administrator</p>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 상태 스펙표 -->
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-6">
+      <div class="px-5 py-3 border-b border-slate-100">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">States</span>
+      </div>
+      <table class="w-full text-xs">
+        <thead class="bg-slate-50 border-b border-slate-100">
+          <tr>
+            <th class="px-5 py-3 text-left font-bold text-slate-400 uppercase tracking-widest w-28">State</th>
+            <th class="px-5 py-3 text-left font-bold text-slate-400 uppercase tracking-widest">배경</th>
+            <th class="px-5 py-3 text-left font-bold text-slate-400 uppercase tracking-widest">텍스트</th>
+            <th class="px-5 py-3 text-left font-bold text-slate-400 uppercase tracking-widest">아이콘</th>
+            <th class="px-5 py-3 text-left font-bold text-slate-400 uppercase tracking-widest">우측 Accent</th>
+            <th class="px-5 py-3 text-left font-bold text-slate-400 uppercase tracking-widest">Font weight</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          <tr>
+            <td class="px-5 py-3 font-semibold text-slate-800">Selected</td>
+            <td class="px-5 py-3 font-mono text-slate-600">blue-600/20</td>
+            <td class="px-5 py-3 font-mono text-slate-600">white</td>
+            <td class="px-5 py-3 font-mono text-slate-600">text-blue-400 · FILL 1</td>
+            <td class="px-5 py-3 font-mono text-slate-600">border-r-4 border-blue-500</td>
+            <td class="px-5 py-3 font-mono text-slate-600">font-semibold</td>
+          </tr>
+          <tr>
+            <td class="px-5 py-3 font-semibold text-slate-800">Default</td>
+            <td class="px-5 py-3 font-mono text-slate-600">transparent</td>
+            <td class="px-5 py-3 font-mono text-slate-600">slate-400</td>
+            <td class="px-5 py-3 font-mono text-slate-600">currentColor · FILL 0</td>
+            <td class="px-5 py-3 font-mono text-slate-600">없음</td>
+            <td class="px-5 py-3 font-mono text-slate-600">font-normal</td>
+          </tr>
+          <tr>
+            <td class="px-5 py-3 font-semibold text-slate-800">Hover</td>
+            <td class="px-5 py-3 font-mono text-slate-600">slate-800/50</td>
+            <td class="px-5 py-3 font-mono text-slate-600">white</td>
+            <td class="px-5 py-3 font-mono text-slate-600">white · FILL 0</td>
+            <td class="px-5 py-3 font-mono text-slate-600">없음</td>
+            <td class="px-5 py-3 font-mono text-slate-600">font-normal</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 메뉴 구성 -->
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-6">
+      <div class="px-5 py-3 border-b border-slate-100">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Menu Items</span>
+      </div>
+      <table class="w-full text-xs">
+        <thead class="bg-slate-50 border-b border-slate-100">
+          <tr>
+            <th class="px-5 py-3 text-left font-bold text-slate-400 uppercase tracking-widest">Label</th>
+            <th class="px-5 py-3 text-left font-bold text-slate-400 uppercase tracking-widest">Icon (Material Symbols)</th>
+            <th class="px-5 py-3 text-left font-bold text-slate-400 uppercase tracking-widest">Route (예정)</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          <tr>
+            <td class="px-5 py-3 font-semibold text-slate-800">Main Dashboard</td>
+            <td class="px-5 py-3 font-mono text-slate-600">monitoring</td>
+            <td class="px-5 py-3 font-mono text-slate-400">/dashboard</td>
+          </tr>
+          <tr>
+            <td class="px-5 py-3 font-semibold text-slate-800">Clinic Settings</td>
+            <td class="px-5 py-3 font-mono text-slate-600">medical_services</td>
+            <td class="px-5 py-3 font-mono text-slate-400">/clinics</td>
+          </tr>
+          <tr>
+            <td class="px-5 py-3 font-semibold text-slate-800">Billing &amp; Settlement</td>
+            <td class="px-5 py-3 font-mono text-slate-600">receipt_long</td>
+            <td class="px-5 py-3 font-mono text-slate-400">/billing</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 코드 스니펫 -->
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div class="px-5 py-3 border-b border-slate-100">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Code · HTML / JSX</span>
+      </div>
+      <div class="p-5">
+<pre><span class="token-cmt">&lt;!-- SideNav 컨테이너 --&gt;</span>
+<span class="token-tag">&lt;aside</span> <span class="token-attr">class=</span><span class="token-val">"bg-slate-900 h-screen w-64 fixed left-0 top-0 shadow-2xl flex flex-col z-50"</span><span class="token-tag">&gt;</span>
+
+  <span class="token-cmt">&lt;!-- 로고 영역 --&gt;</span>
+  <span class="token-tag">&lt;div</span> <span class="token-attr">class=</span><span class="token-val">"px-6 py-8"</span><span class="token-tag">&gt;</span>
+    <span class="token-tag">&lt;h1</span> <span class="token-attr">class=</span><span class="token-val">"text-xl font-bold tracking-tighter text-white"</span><span class="token-tag">&gt;</span>Precision Medical<span class="token-tag">&lt;/h1&gt;</span>
+    <span class="token-tag">&lt;p</span> <span class="token-attr">class=</span><span class="token-val">"text-[10px] uppercase tracking-widest text-slate-500 mt-1 font-semibold"</span><span class="token-tag">&gt;</span>Financial Intelligence<span class="token-tag">&lt;/p&gt;</span>
+  <span class="token-tag">&lt;/div&gt;</span>
+
+  <span class="token-cmt">&lt;!-- 내비게이션 --&gt;</span>
+  <span class="token-tag">&lt;nav</span> <span class="token-attr">class=</span><span class="token-val">"flex-1 px-3 space-y-0.5"</span><span class="token-tag">&gt;</span>
+
+    <span class="token-cmt">&lt;!-- Default (미선택) --&gt;</span>
+    <span class="token-tag">&lt;a</span> <span class="token-attr">class=</span><span class="token-val">"flex items-center gap-3 px-4 py-3
+           text-slate-400 hover:text-white hover:bg-slate-800/50
+           rounded-sm transition-all duration-200"</span> <span class="token-attr">href=</span><span class="token-val">"#"</span><span class="token-tag">&gt;</span>
+      <span class="token-tag">&lt;span</span> <span class="token-attr">class=</span><span class="token-val">"material-symbols-outlined text-[22px]"</span><span class="token-tag">&gt;</span>monitoring<span class="token-tag">&lt;/span&gt;</span>
+      <span class="token-tag">&lt;span</span> <span class="token-attr">class=</span><span class="token-val">"text-sm"</span><span class="token-tag">&gt;</span>Main Dashboard<span class="token-tag">&lt;/span&gt;</span>
+    <span class="token-tag">&lt;/a&gt;</span>
+
+    <span class="token-cmt">&lt;!-- Selected (현재 페이지) --&gt;</span>
+    <span class="token-tag">&lt;a</span> <span class="token-attr">class=</span><span class="token-val">"flex items-center gap-3 px-4 py-3
+           text-white bg-blue-600/20 border-r-4 border-blue-500
+           transition-all duration-200"</span> <span class="token-attr">href=</span><span class="token-val">"#"</span><span class="token-attr"> aria-current=</span><span class="token-val">"page"</span><span class="token-tag">&gt;</span>
+      <span class="token-cmt">&lt;!-- Selected: FILL 1, text-blue-400 --&gt;</span>
+      <span class="token-tag">&lt;span</span> <span class="token-attr">class=</span><span class="token-val">"material-symbols-outlined text-[22px] text-blue-400"</span>
+            <span class="token-attr">style=</span><span class="token-val">"font-variation-settings:'FILL' 1"</span><span class="token-tag">&gt;</span>medical_services<span class="token-tag">&lt;/span&gt;</span>
+      <span class="token-tag">&lt;span</span> <span class="token-attr">class=</span><span class="token-val">"text-sm font-semibold"</span><span class="token-tag">&gt;</span>Clinic Settings<span class="token-tag">&lt;/span&gt;</span>
+    <span class="token-tag">&lt;/a&gt;</span>
+
+    <span class="token-tag">&lt;a</span> <span class="token-attr">class=</span><span class="token-val">"flex items-center gap-3 px-4 py-3
+           text-slate-400 hover:text-white hover:bg-slate-800/50
+           rounded-sm transition-all duration-200"</span> <span class="token-attr">href=</span><span class="token-val">"#"</span><span class="token-tag">&gt;</span>
+      <span class="token-tag">&lt;span</span> <span class="token-attr">class=</span><span class="token-val">"material-symbols-outlined text-[22px]"</span><span class="token-tag">&gt;</span>receipt_long<span class="token-tag">&lt;/span&gt;</span>
+      <span class="token-tag">&lt;span</span> <span class="token-attr">class=</span><span class="token-val">"text-sm"</span><span class="token-tag">&gt;</span>Billing &amp; Settlement<span class="token-tag">&lt;/span&gt;</span>
+    <span class="token-tag">&lt;/a&gt;</span>
+
+  <span class="token-tag">&lt;/nav&gt;</span>
+
+  <span class="token-cmt">&lt;!-- 유저 프로필 --&gt;</span>
+  <span class="token-tag">&lt;div</span> <span class="token-attr">class=</span><span class="token-val">"p-4 mt-auto"</span><span class="token-tag">&gt;</span>
+    <span class="token-tag">&lt;div</span> <span class="token-attr">class=</span><span class="token-val">"flex items-center gap-3 px-2"</span><span class="token-tag">&gt;</span>
+      <span class="token-tag">&lt;div</span> <span class="token-attr">class=</span><span class="token-val">"h-8 w-8 rounded-full bg-slate-800 border border-slate-700
+                flex items-center justify-center text-[11px] font-bold text-white"</span><span class="token-tag">&gt;</span>
+        AR <span class="token-cmt">&lt;!-- 이니셜 또는 &lt;img&gt; --&gt;</span>
+      <span class="token-tag">&lt;/div&gt;</span>
+      <span class="token-tag">&lt;div&gt;</span>
+        <span class="token-tag">&lt;p</span> <span class="token-attr">class=</span><span class="token-val">"text-xs font-bold text-white"</span><span class="token-tag">&gt;</span>Areum Kim<span class="token-tag">&lt;/p&gt;</span>
+        <span class="token-tag">&lt;p</span> <span class="token-attr">class=</span><span class="token-val">"text-[10px] text-slate-500"</span><span class="token-tag">&gt;</span>Administrator<span class="token-tag">&lt;/p&gt;</span>
+      <span class="token-tag">&lt;/div&gt;</span>
+    <span class="token-tag">&lt;/div&gt;</span>
+  <span class="token-tag">&lt;/div&gt;</span>
+
+<span class="token-tag">&lt;/aside&gt;</span></pre>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ════════════════════════════════════════
+       SECTION 2. TopNav  (placeholder — 다음 작업)
+  ════════════════════════════════════════ -->
+  <section>
+    <div class="mb-4">
+      <h2 class="text-lg font-bold text-slate-900">2. TopNav</h2>
+      <p class="text-sm text-slate-500 mt-1">페이지 상단 고정 내비게이션. 다음 단계에서 문서화.</p>
+    </div>
+    <div class="bg-white rounded-xl border border-dashed border-slate-300 p-10 flex items-center justify-center">
+      <p class="text-sm text-slate-400">— 작성 예정 —</p>
+    </div>
+  </section>
+
+
+  <!-- ════════════════════════════════════════
+       SECTION 3. Card  (placeholder)
+  ════════════════════════════════════════ -->
+  <section>
+    <div class="mb-4">
+      <h2 class="text-lg font-bold text-slate-900">3. Card</h2>
+      <p class="text-sm text-slate-500 mt-1">섹션 컨테이너. 다음 단계에서 문서화.</p>
+    </div>
+    <div class="bg-white rounded-xl border border-dashed border-slate-300 p-10 flex items-center justify-center">
+      <p class="text-sm text-slate-400">— 작성 예정 —</p>
+    </div>
+  </section>
+
+</div>
+
+<!-- 문서 푸터 -->
+<div class="border-t border-slate-200 bg-white px-10 py-5 mt-10">
+  <p class="text-[10px] text-slate-400">RCM Dashboard · Design System · 최종 업데이트 2026-04-08 · <a href="design-tokens.md" class="underline hover:text-slate-600">design-tokens.md</a></p>
+</div>
+
+</body>
+</html>
