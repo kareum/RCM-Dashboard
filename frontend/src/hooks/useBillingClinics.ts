@@ -1,20 +1,37 @@
+import { useState, useEffect } from 'react'
 import { BILLING_CLINICS } from '../pages/billing/data'
 import type { BillingClinic } from '../pages/billing/data'
 
+const API_BASE = 'http://localhost:3001/api'
+
+interface ApiClinic { id: string; code: string }
+
 // ── useBillingClinics ────────────────────────────────────────
-// 현재: 목 데이터 반환
-// API 전환 시: GET /api/clinics + GET /api/clinics/:id/billing-settings 병합으로 교체
+// GET /api/clinics 로 DB UUID(dbId)를 가져와 목 데이터와 병합
 
 export function useBillingClinics() {
-  return {
-    clinics: BILLING_CLINICS,
-    loading: false,
-    error:   null,
-  }
+  const [clinics, setClinics] = useState<BillingClinic[]>(BILLING_CLINICS)
+
+  useEffect(() => {
+    fetch(`${API_BASE}/clinics`)
+      .then(r => r.json())
+      .then((apiClinics: ApiClinic[]) => {
+        setClinics(prev =>
+          prev.map(c => {
+            const match = apiClinics.find(a => a.code === c.code)
+            return match ? { ...c, dbId: match.id } : c
+          }),
+        )
+      })
+      .catch(console.error)
+  }, [])
+
+  return { clinics, loading: false, error: null }
 }
 
 export function useBillingClinic(id: number) {
-  const clinic = BILLING_CLINICS.find(c => c.id === id) ?? BILLING_CLINICS[0]
+  const { clinics } = useBillingClinics()
+  const clinic = clinics.find(c => c.id === id) ?? clinics[0]
   return { clinic, loading: false, error: null }
 }
 

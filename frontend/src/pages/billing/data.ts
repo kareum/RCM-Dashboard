@@ -21,6 +21,24 @@ export interface HistoryEntry {
   status:  EntryStatus
 }
 
+/** DB에서 내려오는 invoice_entries 레코드 형태 */
+export interface InvoiceEntryRecord {
+  id:           string
+  clinicId:     string
+  billingYear:  number
+  billingMonth: number
+  rpmInvoice:   number | null
+  ccmInvoice:   number | null
+  rpmPts:       number | null
+  ccmPts:       number | null
+  ciAmount:     number | null
+  ciDate:       string | null
+  ciMethod:     'ACH' | 'Zelle' | 'Check' | null
+  ciReference:  string | null
+  ciRemark:     string | null
+  status:       EntryStatus
+}
+
 /** CLINICS(공유 기본 데이터)에 청구 전용 필드를 병합
  *  API 연동 시: GET /api/clinics/:id/billing-settings 응답으로 교체 */
 const BILLING_EXTRA: Record<number, Omit<BillingClinic, keyof Clinic>> = {

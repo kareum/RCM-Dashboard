@@ -11,6 +11,7 @@ export interface Clinic {
   state:    string
   services: ServiceType[]
   active:   boolean
+  dbId?:    string   // DB UUID — API 연동 후 채워짐
 }
 
 export const CLINICS: Clinic[] = [

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button, Card, CardHeader, CardBody } from '../../components/ui'
-import { type BillingClinic, type HistoryEntry, fmt } from './data'
+import { type BillingClinic, type InvoiceEntryRecord, fmt } from './data'
+import type { SaveCiPayload } from '../../hooks/useInvoiceEntries'
 
 // ── helpers ─────────────────────────────────────────────────
 
@@ -117,15 +118,15 @@ function ServiceBlock({ type, splitLabel, disabled, invoice, pts, calcRows, onIn
 // ── CISection ────────────────────────────────────────────────
 
 interface CISectionProps {
-  clinic:       BillingClinic
-  rpmInv:       number
-  ccmInv:       number
-  fee:          number
-  savedCiAmount: number | null
-  onSaveCi:     (amount: number | null) => void
+  clinic:        BillingClinic
+  rpmInv:        number
+  ccmInv:        number
+  fee:           number
+  existingCi:    InvoiceEntryRecord | null
+  onSaveCi:      (payload: SaveCiPayload) => Promise<void>
 }
 
-function CISection({ clinic, rpmInv, ccmInv, fee, savedCiAmount, onSaveCi }: CISectionProps) {
+function CISection({ clinic, rpmInv, ccmInv, fee, existingCi, onSaveCi }: CISectionProps) {
   const [open,        setOpen]        = useState(false)
   const [mode,        setMode]        = useState<'total' | 'split'>('total')
   const [totalAmt,    setTotalAmt]    = useState('')
@@ -137,6 +138,25 @@ function CISection({ clinic, rpmInv, ccmInv, fee, savedCiAmount, onSaveCi }: CIS
   const [ccmAmt,      setCcmAmt]      = useState('')
   const [splitRemark, setSplitRemark] = useState('')
   const [ciSaved,     setCiSaved]     = useState(false)
+  const [saving,      setSaving]      = useState(false)
+
+  // 기존 DB 값으로 폼 초기화
+  useEffect(() => {
+    if (existingCi?.ciAmount != null) {
+      setTotalAmt(String(existingCi.ciAmount))
+    } else {
+      setTotalAmt('')
+    }
+    setTotalDate(existingCi?.ciDate ?? '')
+    setTotalMethod(existingCi?.ciMethod ?? '')
+    setTotalRef(existingCi?.ciReference ?? '')
+    setTotalRemark(existingCi?.ciRemark ?? '')
+    setRpmAmt('')
+    setCcmAmt('')
+    setSplitRemark('')
+  // 의도적으로 entry ID 변경 시에만 폼 초기화 (개별 필드 변경은 재초기화 대상 아님)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingCi?.id])
 
   const rpmExpected   = rpmInv * (clinic.rpmSplit[1] / 100)
   const ccmExpected   = ccmInv * (clinic.ccmSplit[1] / 100)
@@ -150,13 +170,37 @@ function CISection({ clinic, rpmInv, ccmInv, fee, savedCiAmount, onSaveCi }: CIS
   const totalReceived    = rpmReceived + ccmReceived
   const splitUncollected = totalExpected - totalReceived
 
-  function handleSaveCi() {
-    const amount = mode === 'total'
-      ? (ciTotal > 0 ? ciTotal : null)
-      : (totalReceived > 0 ? totalReceived : null)
-    onSaveCi(amount)
-    setCiSaved(true)
-    setTimeout(() => setCiSaved(false), 2000)
+  const savedCiAmount = existingCi?.ciAmount ?? null
+
+  async function handleSaveCi() {
+    setSaving(true)
+    try {
+      if (mode === 'total') {
+        const amount = ciTotal > 0 ? ciTotal : null
+        await onSaveCi({
+          ciAmount:    amount,
+          ciDate:      totalDate || null,
+          ciMethod:    (totalMethod as 'ACH' | 'Zelle' | 'Check') || null,
+          ciReference: totalRef || null,
+          ciRemark:    totalRemark || null,
+          status:      amount != null && amount > 0 ? 'paid' : 'unpaid',
+        })
+      } else {
+        const amount = totalReceived > 0 ? totalReceived : null
+        await onSaveCi({
+          ciAmount:    amount,
+          ciDate:      null,
+          ciMethod:    null,
+          ciReference: null,
+          ciRemark:    splitRemark || null,
+          status:      amount != null && amount > 0 ? 'paid' : 'unpaid',
+        })
+      }
+      setCiSaved(true)
+      setTimeout(() => setCiSaved(false), 2000)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -299,8 +343,8 @@ function CISection({ clinic, rpmInv, ccmInv, fee, savedCiAmount, onSaveCi }: CIS
                 Saved
               </span>
             )}
-            <Button variant="secondary" size="sm" onClick={handleSaveCi}>
-              Save CI
+            <Button variant="secondary" size="sm" onClick={handleSaveCi} disabled={saving}>
+              {saving ? 'Saving…' : 'Save CI'}
             </Button>
           </div>
         </div>
@@ -312,30 +356,47 @@ function CISection({ clinic, rpmInv, ccmInv, fee, savedCiAmount, onSaveCi }: CIS
 // ── InvoiceEntryTab ──────────────────────────────────────────
 
 interface InvoiceEntryTabProps {
-  clinic:       BillingClinic
-  entries:      HistoryEntry[]
-  onSaveEntry:  (entry: HistoryEntry) => void
+  clinic:         BillingClinic
+  records:        InvoiceEntryRecord[]
+  onSaveInvoice:  (year: number, month: number, data: { rpmInvoice: number; ccmInvoice: number; rpmPts: number; ccmPts: number }) => Promise<void>
+  onSaveCi:       (year: number, month: number, ci: SaveCiPayload) => Promise<void>
 }
 
-const MONTHS      = ['January','February','March','April','May','June',
-                     'July','August','September','October','November','December']
-const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun',
-                      'Jul','Aug','Sep','Oct','Nov','Dec']
+const MONTHS       = ['January','February','March','April','May','June',
+                      'July','August','September','October','November','December']
 
-export function InvoiceEntryTab({ clinic, entries, onSaveEntry }: InvoiceEntryTabProps) {
-  const [monthOffset, setMonthOffset] = useState(2)
-  const [rpmInvoice,  setRpmInvoice]  = useState('18450')
-  const [ccmInvoice,  setCcmInvoice]  = useState('19097')
-  const [rpmPts,      setRpmPts]      = useState('126')
-  const [ccmPts,      setCcmPts]      = useState('165')
-  const [invoiceSaved, setInvoiceSaved] = useState(false)
+/** 현재 날짜 기준으로 offset 만큼 이동한 {year, month(1-12)} 반환 */
+function offsetMonth(offset: number): { year: number; month: number } {
+  const now = new Date()
+  const d   = new Date(now.getFullYear(), now.getMonth() + offset)
+  return { year: d.getFullYear(), month: d.getMonth() + 1 }
+}
 
-  const monthIdx  = ((monthOffset % 12) + 12) % 12
-  const monthLabel = MONTHS[monthIdx] + ' 2025'
-  const periodKey  = SHORT_MONTHS[monthIdx] + ' 2025'
+export function InvoiceEntryTab({ clinic, records, onSaveInvoice, onSaveCi }: InvoiceEntryTabProps) {
+  const [monthOffset,   setMonthOffset]  = useState(0)
+  const [rpmInvoice,    setRpmInvoice]   = useState('')
+  const [ccmInvoice,    setCcmInvoice]   = useState('')
+  const [rpmPts,        setRpmPts]       = useState('')
+  const [ccmPts,        setCcmPts]       = useState('')
+  const [invoiceSaved,  setInvoiceSaved] = useState(false)
+  const [saving,        setSaving]       = useState(false)
 
-  const currentEntry = entries.find(e => e.period === periodKey)
+  const { year, month } = offsetMonth(monthOffset)
+  const monthLabel = MONTHS[month - 1] + ' ' + year
+
+  // 해당 월 DB 레코드
+  const currentEntry = records.find(r => r.billingYear === year && r.billingMonth === month) ?? null
   const isPaid       = currentEntry?.status === 'paid'
+
+  // 월이 바뀌면 DB 값으로 폼 초기화
+  useEffect(() => {
+    setRpmInvoice(currentEntry?.rpmInvoice != null ? String(currentEntry.rpmInvoice) : '')
+    setCcmInvoice(currentEntry?.ccmInvoice != null ? String(currentEntry.ccmInvoice) : '')
+    setRpmPts(currentEntry?.rpmPts != null ? String(currentEntry.rpmPts) : '')
+    setCcmPts(currentEntry?.ccmPts != null ? String(currentEntry.ccmPts) : '')
+  // 의도적으로 year/month/entry ID 변경 시에만 폼 초기화
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, month, currentEntry?.id])
 
   const rpm      = parseFloat(rpmInvoice) || 0
   const ccm      = parseFloat(ccmInvoice) || 0
@@ -360,26 +421,20 @@ export function InvoiceEntryTab({ clinic, entries, onSaveEntry }: InvoiceEntryTa
 
   const infoText = `Split ratios from clinic settings · RPM ${clinic.rpmSplit[0]}/${clinic.rpmSplit[1]} · CCM ${clinic.ccmSplit[0]}/${clinic.ccmSplit[1]} · ${clinic.billerFeeType === 'pct' ? `Biller fee ${clinic.billerFeeVal}%` : `Biller fee $${clinic.billerFeeVal} fixed`}`
 
-  function handleSaveInvoice() {
-    onSaveEntry({
-      period:  periodKey,
-      rpmInv:  rpm,
-      ccmInv:  ccm,
-      ciTotal: currentEntry?.ciTotal ?? null,
-      status:  currentEntry?.status  ?? 'unpaid',
-    })
-    setInvoiceSaved(true)
-    setTimeout(() => setInvoiceSaved(false), 2000)
-  }
-
-  function handleSaveCi(amount: number | null) {
-    onSaveEntry({
-      period:  periodKey,
-      rpmInv:  currentEntry?.rpmInv ?? rpm,
-      ccmInv:  currentEntry?.ccmInv ?? ccm,
-      ciTotal: amount,
-      status:  amount != null && amount > 0 ? 'paid' : (currentEntry?.status ?? 'unpaid'),
-    })
+  async function handleSaveInvoice() {
+    setSaving(true)
+    try {
+      await onSaveInvoice(year, month, {
+        rpmInvoice: rpm,
+        ccmInvoice: ccm,
+        rpmPts:     parseFloat(rpmPts) || 0,
+        ccmPts:     parseFloat(ccmPts) || 0,
+      })
+      setInvoiceSaved(true)
+      setTimeout(() => setInvoiceSaved(false), 2000)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -438,13 +493,15 @@ export function InvoiceEntryTab({ clinic, entries, onSaveEntry }: InvoiceEntryTa
       <Card>
         <CardHeader icon="account_balance" title="HicareNet Collection" />
         <CardBody padding="sm">
+          {/* key를 월별로 줘서 월 이동 시 CISection 상태 초기화 */}
           <CISection
+            key={`${year}-${month}`}
             clinic={clinic}
             rpmInv={rpm}
             ccmInv={ccm}
             fee={fee}
-            savedCiAmount={currentEntry?.ciTotal ?? null}
-            onSaveCi={handleSaveCi}
+            existingCi={currentEntry}
+            onSaveCi={ci => onSaveCi(year, month, ci)}
           />
         </CardBody>
       </Card>
@@ -457,8 +514,10 @@ export function InvoiceEntryTab({ clinic, entries, onSaveEntry }: InvoiceEntryTa
             Saved
           </span>
         )}
-        <Button variant="ghost" size="sm">Cancel</Button>
-        <Button variant="secondary" size="sm" onClick={handleSaveInvoice}>Save entry</Button>
+        <Button variant="ghost" size="sm" onClick={() => setMonthOffset(0)}>Reset month</Button>
+        <Button variant="secondary" size="sm" onClick={handleSaveInvoice} disabled={saving}>
+          {saving ? 'Saving…' : 'Save entry'}
+        </Button>
       </div>
     </div>
   )

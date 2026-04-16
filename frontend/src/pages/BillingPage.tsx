@@ -1,12 +1,12 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { Badge }             from '../components/ui'
 import { NavTabs }           from '../components/ui/NavTabs'
 import { ClinicListPanel }   from '../components/shared/ClinicListPanel'
 import { InvoiceEntryTab }   from './billing/InvoiceEntryTab'
 import { EntryHistoryTab }   from './billing/EntryHistoryTab'
 import { useBillingClinics } from '../hooks/useBillingClinics'
-import { BILLING_HISTORY }   from './billing/data'
-import type { HistoryEntry } from './billing/data'
+import { useInvoiceEntries } from '../hooks/useInvoiceEntries'
+import type { SaveCiPayload } from '../hooks/useInvoiceEntries'
 
 const TABS = [
   { key:'invoice', label:'Invoice entry' },
@@ -18,26 +18,32 @@ export function BillingPage() {
   const [activeId,  setActiveId]  = useState(clinics[0].id)
   const [activeTab, setActiveTab] = useState('invoice')
 
-  /** 클리닉별 청구 내역 — mock 으로 초기화, 저장 시 업데이트 */
-  const [entries, setEntries] = useState<Record<string, HistoryEntry[]>>(
-    () => ({ ...BILLING_HISTORY }),
-  )
-
   const clinic = clinics.find(c => c.id === activeId) ?? clinics[0]
 
-  const handleSaveEntry = useCallback((clinicCode: string, entry: HistoryEntry) => {
-    setEntries(prev => {
-      const list = prev[clinicCode] ?? []
-      const idx  = list.findIndex(e => e.period === entry.period)
-      if (idx >= 0) {
-        const updated = [...list]
-        updated[idx] = { ...updated[idx], ...entry }
-        return { ...prev, [clinicCode]: updated }
-      }
-      // 새 항목은 최신순 맨 앞
-      return { ...prev, [clinicCode]: [entry, ...list] }
-    })
-  }, [])
+  // 선택된 클리닉의 DB UUID로 invoice 내역 관리
+  const { records, loading, saveInvoice, saveCi } = useInvoiceEntries(clinic.dbId)
+
+  /** Invoice 저장 */
+  async function handleSaveInvoice(
+    year: number, month: number,
+    data: { rpmInvoice: number; ccmInvoice: number; rpmPts: number; ccmPts: number },
+  ) {
+    if (!clinic.dbId) return
+    await saveInvoice({ clinicId: clinic.dbId, billingYear: year, billingMonth: month, ...data })
+  }
+
+  /** CI(입금) 저장 — invoice가 없으면 먼저 생성(upsert) 후 CI 저장 */
+  async function handleSaveCi(year: number, month: number, ci: SaveCiPayload) {
+    if (!clinic.dbId) return
+    let entry = records.find(r => r.billingYear === year && r.billingMonth === month)
+    if (!entry) {
+      entry = await saveInvoice({
+        clinicId: clinic.dbId, billingYear: year, billingMonth: month,
+        rpmInvoice: 0, ccmInvoice: 0, rpmPts: 0, ccmPts: 0,
+      })
+    }
+    await saveCi(entry.id, ci)
+  }
 
   return (
     <div className="flex overflow-hidden" style={{ height: 'calc(100vh - 65px)' }}>
@@ -74,14 +80,16 @@ export function BillingPage() {
           {activeTab === 'invoice' && (
             <InvoiceEntryTab
               clinic={clinic}
-              entries={entries[clinic.code] ?? []}
-              onSaveEntry={entry => handleSaveEntry(clinic.code, entry)}
+              records={records}
+              onSaveInvoice={handleSaveInvoice}
+              onSaveCi={handleSaveCi}
             />
           )}
           {activeTab === 'history' && (
             <EntryHistoryTab
               clinic={clinic}
-              entries={entries[clinic.code] ?? []}
+              records={records}
+              loading={loading}
             />
           )}
         </div>
