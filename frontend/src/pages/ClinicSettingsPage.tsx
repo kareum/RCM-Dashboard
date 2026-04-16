@@ -7,92 +7,52 @@ import {
 } from '../components/ui'
 import { useTopNavActions } from '../components/layout/TopNavActionsContext'
 import { useClinics }       from '../hooks/useClinics'
+import { useClinicSettings, splitPeriodLabel, feePeriodLabel } from '../hooks/useClinicSettings'
+import type { EmrLink }     from '../hooks/useClinicSettings'
 import { ClinicListPanel }  from '../components/shared/ClinicListPanel'
 import type { ServiceType } from '../data/clinics'
 
-interface EmrLink {
-  id:   number
-  name: string
-  url:  string
-}
-
-interface SplitHistory {
-  period:    string
-  clinic:    number
-  hicare:    number
-  changedAt: string
-}
-
-interface FeeHistory {
-  period:    string
-  type:      string
-  val:       string
-  changedAt: string
-}
-
-// ── 목 데이터 ───────────────────────────────────────────────
-const ACTIVE_PATIENTS: Record<number, Partial<Record<ServiceType, number>>> = {
-  1:  { RPM: 142, CCM: 87  },
-  2:  { RPM: 58              },
-  3:  {           CCM: 34  },
-  4:  { RPM: 201, CCM: 115 },
-  5:  { RPM: 76              },
-  6:  { RPM: 93,  CCM: 61  },
-  7:  {           CCM: 0   },
-  8:  { RPM: 167, CCM: 98  },
-  9:  { RPM: 44              },
-  10: { RPM: 130, CCM: 72  },
-  11: {           CCM: 0   },
-  12: { RPM: 29              },
-}
-
-const SPLIT_HISTORY: Partial<Record<ServiceType, SplitHistory[]>> = {
-  RPM: [
-    { period:'2025-03 ~ 현재',    clinic:50, hicare:50, changedAt:'2025-03-01' },
-    { period:'2025-01 ~ 2025-02', clinic:40, hicare:60, changedAt:'2025-01-01' },
-  ],
-  CCM: [
-    { period:'2025-03 ~ 현재',    clinic:60, hicare:40, changedAt:'2025-03-10' },
-    { period:'2024-06 ~ 2025-02', clinic:50, hicare:50, changedAt:'2024-06-01' },
-    { period:'2024-01 ~ 2024-05', clinic:45, hicare:55, changedAt:'2024-01-01' },
-  ],
-}
-
-const FEE_HISTORY: FeeHistory[] = [
-  { period:'2025-01 ~ 현재',    type:'Percentage', val:'5.0%',    changedAt:'2025-01-01' },
-  { period:'2024-01 ~ 2024-12', type:'Fixed',      val:'$200/mo', changedAt:'2024-01-01' },
-]
-
 // ── 컴포넌트 ────────────────────────────────────────────────
 export function ClinicSettingsPage() {
-  const [activeId,   setActiveId]   = useState(1)
-  const [isSyncing,  setIsSyncing]  = useState(false)
-  const [lastSynced, setLastSynced] = useState('2026-04-08 09:32')
-  const [emrLinks,   setEmrLinks]   = useState<EmrLink[]>([
-    { id:1, name:'AthenaHealth', url:'https://athenanet.athenahealth.com/1234' },
-    { id:2, name:'Epic MyChart', url:'https://mychart.epic.com/sunrise' },
-  ])
-  const [newEmr,     setNewEmr]     = useState({ name:'', url:'' })
+  const [activeId,     setActiveId]     = useState(1)
+  const [isSyncing,    setIsSyncing]    = useState(false)
+  const [emrLinks,     setEmrLinks]     = useState<(EmrLink & { _key: number })[]>([])
+  const [newEmr,       setNewEmr]       = useState({ name:'', url:'' })
   const [historyModal, setHistoryModal] = useState<{ open:boolean; type: ServiceType|'fee' }>({ open:false, type:'RPM' })
-  const [toast,      setToast]      = useState({ visible:false, message:'', variant:'success' as 'success'|'error' })
+  const [toast,        setToast]        = useState({ visible:false, message:'', variant:'success' as 'success'|'error' })
 
-  const { clinics } = useClinics()
-  const clinic = clinics.find(c => c.id === activeId) ?? clinics[0]
-  const { setActions } = useTopNavActions()
+  const { clinics }                       = useClinics()
+  const clinic                            = clinics.find(c => c.id === activeId) ?? clinics[0]
+  const { detail, loading, saveEmrLinks, triggerSync } = useClinicSettings(clinic.dbId)
+  const { setActions }                    = useTopNavActions()
 
   const showToast = useCallback((message: string, variant: 'success'|'error' = 'success') => {
     setToast({ visible:true, message, variant })
   }, [])
 
-  const handleSync = useCallback(() => {
+  // detail 로드되면 EMR 링크 초기화 (클리닉 변경 시에만 초기화)
+  useEffect(() => {
+    if (!detail) return
+    setEmrLinks((detail.emrLinks ?? []).map((e, i) => ({ ...e, _key: i })))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detail?.id])
+
+  // lastSyncedAt 표시 문자열
+  const lastSyncedLabel = detail?.lastSyncedAt
+    ? new Date(detail.lastSyncedAt).toLocaleString('en-US', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false })
+    : 'Not synced'
+
+  const handleSync = useCallback(async () => {
     setIsSyncing(true)
-    setTimeout(() => {
-      setIsSyncing(false)
-      const now = new Date().toISOString().slice(0,16).replace('T',' ')
-      setLastSynced(now)
+    try {
+      await triggerSync()
       showToast('Sync complete — data updated')
-    }, 1800)
-  }, [showToast])
+    } catch {
+      showToast('Sync failed', 'error')
+    } finally {
+      setIsSyncing(false)
+    }
+  }, [triggerSync, showToast])
 
   // TopNav에 sync 컨트롤 등록
   useEffect(() => {
@@ -108,33 +68,52 @@ export function ClinicSettingsPage() {
           : <span className="material-symbols-outlined text-[22px] text-slate-500 group-hover:text-blue-600 transition-colors group-hover:rotate-180 transition-transform duration-500">sync</span>
         }
         <span className="text-[9px] text-slate-400 group-hover:text-blue-500 transition-colors leading-none">
-          {isSyncing ? 'Syncing…' : lastSynced.slice(11)}
+          {isSyncing ? 'Syncing…' : lastSyncedLabel.slice(-5)}
         </span>
       </button>
     )
     return () => setActions(null)
-  }, [isSyncing, lastSynced, handleSync, setActions])
+  }, [isSyncing, lastSyncedLabel, handleSync, setActions])
 
   // EMR
   function addEmr() {
     if (!newEmr.name || !newEmr.url) { showToast('EMR name and URL are required', 'error'); return }
-    setEmrLinks(prev => [...prev, { id: Date.now(), ...newEmr }])
+    setEmrLinks(prev => [...prev, { ...newEmr, _key: Date.now() }])
     setNewEmr({ name:'', url:'' })
   }
-  function removeEmr(id: number) { setEmrLinks(prev => prev.filter(e => e.id !== id)) }
-  function saveEmr() { showToast('EMR links saved') }
+  function removeEmr(key: number) { setEmrLinks(prev => prev.filter(e => e._key !== key)) }
+  async function saveEmr() {
+    try {
+      await saveEmrLinks(emrLinks.map(({ name, url }) => ({ name, url })))
+      showToast('EMR links saved')
+    } catch {
+      showToast('Failed to save EMR links', 'error')
+    }
+  }
 
-  // History modal 내용
-  const historyRows =
-    historyModal.type === 'fee'
-      ? FEE_HISTORY
-      : SPLIT_HISTORY[historyModal.type as ServiceType]
+  // Revenue Split — 서비스별 최신 기록
+  const splitByType = (svc: ServiceType) =>
+    detail?.revenueSplitHistory.find(s => s.serviceType === svc) ?? null
+
+  // Biller Fee — 최신 기록
+  const currentFee = detail?.billerFeeHistory[0] ?? null
+
+  // History modal 데이터
+  const splitHistoryRows = historyModal.type !== 'fee'
+    ? (detail?.revenueSplitHistory.filter(s => s.serviceType === historyModal.type) ?? [])
+    : []
+  const feeHistoryRows = historyModal.type === 'fee'
+    ? (detail?.billerFeeHistory ?? [])
+    : []
+
+  // 서비스 목록 (DB 기준)
+  const services = detail?.serviceTypes ?? clinic.services
 
   return (
     <div className="flex flex-1 overflow-hidden h-full">
 
       {/* ── 좌측: 클리닉 목록 ── */}
-      <ClinicListPanel activeId={activeId} onSelect={setActiveId} />
+      <ClinicListPanel activeId={activeId} onSelect={id => { setActiveId(id) }} />
 
       {/* ── 우측: 클리닉 상세 ── */}
       <section className="flex-1 bg-page-bg overflow-y-auto">
@@ -147,15 +126,17 @@ export function ClinicSettingsPage() {
                 <span className="material-symbols-outlined text-2xl icon-filled">local_hospital</span>
               </div>
               <div>
-                <h2 className="text-2xl font-bold tracking-tight text-slate-900">{clinic.name}</h2>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+                  {detail?.name ?? clinic.name}
+                </h2>
                 <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                   <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg">
-                    {clinic.code}
+                    {detail?.code ?? clinic.code}
                   </span>
-                  <Badge variant={clinic.active ? 'active' : 'inactive'} dot>
-                    {clinic.active ? 'Active Provider' : 'Inactive'}
+                  <Badge variant={(detail?.isActive ?? clinic.active) ? 'active' : 'inactive'} dot>
+                    {(detail?.isActive ?? clinic.active) ? 'Active Provider' : 'Inactive'}
                   </Badge>
-                  {clinic.services.map(s => (
+                  {services.map(s => (
                     <Badge key={s} variant={s.toLowerCase() as 'rpm'|'ccm'}>{s}</Badge>
                   ))}
                 </div>
@@ -166,18 +147,22 @@ export function ClinicSettingsPage() {
           {/* ① Basic Information */}
           <Card>
             <CardHeader icon="location_on" title="Basic Information" badge={<ReadOnlyBadge />} />
-            <CardBody className="grid grid-cols-2 gap-x-8 gap-y-5">
-              <div><FieldLabel>Clinic Name</FieldLabel><FieldValue>Sunrise Health Center</FieldValue></div>
-              <div><FieldLabel>Clinic Code</FieldLabel><FieldValue mono>SDW</FieldValue></div>
-              <div><FieldLabel>Contact Name</FieldLabel><FieldValue>Dr. James Kim</FieldValue></div>
-              <div><FieldLabel>Phone</FieldLabel><FieldValue>+1 (310) 555-0182</FieldValue></div>
-              <div><FieldLabel>Timezone</FieldLabel><FieldValue>America/Los_Angeles (PT)</FieldValue></div>
-              <div><FieldLabel>State</FieldLabel><FieldValue>CA — California</FieldValue></div>
-              <div className="col-span-2">
-                <FieldLabel>Address</FieldLabel>
-                <FieldValue>3250 Wilshire Blvd, Suite 400, Los Angeles, CA 90010</FieldValue>
-              </div>
-            </CardBody>
+            {loading && !detail ? (
+              <CardBody><Spinner size="sm" /></CardBody>
+            ) : (
+              <CardBody className="grid grid-cols-2 gap-x-8 gap-y-5">
+                <div><FieldLabel>Clinic Name</FieldLabel><FieldValue>{detail?.name ?? '—'}</FieldValue></div>
+                <div><FieldLabel>Clinic Code</FieldLabel><FieldValue mono>{detail?.code ?? '—'}</FieldValue></div>
+                <div><FieldLabel>Contact Name</FieldLabel><FieldValue>{detail?.contactName ?? '—'}</FieldValue></div>
+                <div><FieldLabel>Phone</FieldLabel><FieldValue>{detail?.phone ?? '—'}</FieldValue></div>
+                <div><FieldLabel>Timezone</FieldLabel><FieldValue>{detail?.timezone ?? '—'}</FieldValue></div>
+                <div><FieldLabel>State</FieldLabel><FieldValue>{detail?.state ?? '—'}</FieldValue></div>
+                <div className="col-span-2">
+                  <FieldLabel>Address</FieldLabel>
+                  <FieldValue>{detail?.address ?? '—'}</FieldValue>
+                </div>
+              </CardBody>
+            )}
           </Card>
 
           {/* ② Service Type */}
@@ -186,31 +171,21 @@ export function ClinicSettingsPage() {
             <CardBody>
               <div className="flex gap-3 flex-wrap">
                 {(['RPM', 'CCM'] as ServiceType[]).map(svc => {
-                  const isActive = clinic.services.includes(svc)
-                  const count = ACTIVE_PATIENTS[clinic.id]?.[svc]
+                  const isActive = services.includes(svc)
                   return (
                     <div
                       key={svc}
                       className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border ${
-                        isActive
-                          ? 'bg-white border-slate-200'
-                          : 'bg-slate-50 border-slate-100 opacity-40'
+                        isActive ? 'bg-white border-slate-200' : 'bg-slate-50 border-slate-100 opacity-40'
                       }`}
                     >
-                      <Badge variant={svc.toLowerCase() as 'rpm' | 'ccm'} dot>{svc}</Badge>
-                      {isActive && count !== undefined && (
-                        <div className="flex items-center gap-1 pl-3 border-l border-slate-200">
-                          <span className="material-symbols-outlined text-[14px] text-slate-400">person</span>
-                          <span className="text-sm font-semibold text-slate-700">{count.toLocaleString()}</span>
-                          <span className="text-[10px] text-slate-400">active</span>
-                        </div>
-                      )}
+                      <Badge variant={svc.toLowerCase() as 'rpm'|'ccm'} dot>{svc}</Badge>
                     </div>
                   )
                 })}
                 {(['BHI', 'PCM'] as const).map(svc => (
                   <div key={svc} className="flex items-center px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 opacity-40">
-                    <span className="px-0 text-xs font-medium text-slate-400">{svc}</span>
+                    <span className="text-xs font-medium text-slate-400">{svc}</span>
                   </div>
                 ))}
               </div>
@@ -218,51 +193,7 @@ export function ClinicSettingsPage() {
             </CardBody>
           </Card>
 
-          {/* ③ CMS-1500 Billing Info */}
-          {/* TODO: 2차 적용 예정
-          <Card>
-            <CardHeader icon="description" title="CMS-1500 Billing Info" badge={<ReadOnlyBadge />} />
-            <CardBody>
-              <div className="flex items-start gap-2 p-3 bg-blue-50/60 rounded-lg mb-5">
-                <span className="material-symbols-outlined text-blue-500 text-base flex-shrink-0 mt-0.5">info</span>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  클리닉 공통 값 — 모든 청구서(CMS-1500)에 자동으로 채워집니다. 환자별로 달라지지 않습니다.
-                </p>
-              </div>
-              <div className="grid grid-cols-3 gap-x-8 gap-y-5">
-                <div>
-                  <FieldLabel sub="Box 25">Federal Tax ID (EIN)</FieldLabel>
-                  <FieldValue mono>12-3456789</FieldValue>
-                  <HintText>사업자 세금 식별번호</HintText>
-                </div>
-                <div>
-                  <FieldLabel sub="Box 33a">Billing Provider NPI</FieldLabel>
-                  <FieldValue mono>1234567890</FieldValue>
-                  <HintText>National Provider Identifier</HintText>
-                </div>
-                <div>
-                  <FieldLabel sub="Box 33b">Taxonomy Code</FieldLabel>
-                  <FieldValue mono>207Q00000X</FieldValue>
-                  <HintText>Provider specialty code</HintText>
-                </div>
-                <div>
-                  <FieldLabel sub="Box 24B">Place of Service (POS)</FieldLabel>
-                  <FieldValue>11 — Office</FieldValue>
-                  <HintText>RPM/CCM은 보통 11 또는 02</HintText>
-                </div>
-                <div>
-                  <FieldLabel sub="Box 27">Accept Assignment</FieldLabel>
-                  <div className="mt-2">
-                    <Toggle checked={true} disabled label="Yes" />
-                  </div>
-                  <HintText>Medicare 청구 시 Yes 권장</HintText>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-          */}
-
-          {/* ④ Revenue Split */}
+          {/* ③ Revenue Split */}
           <Card>
             <CardHeader icon="account_balance" title="Revenue Split (Clinic : Hicare)" badge={<ReadOnlyBadge />} />
             <Table>
@@ -274,30 +205,30 @@ export function ClinicSettingsPage() {
               ]} />
               <tbody>
                 {(['RPM','CCM'] as ServiceType[]).map(svc => {
-                  const current = SPLIT_HISTORY[svc]?.[0]
-                  if (!current) return null
+                  if (!services.includes(svc)) return null
+                  const current = splitByType(svc)
                   return (
                     <TableRow key={svc}>
                       <TableCell>
                         <Badge variant={svc.toLowerCase() as 'rpm'|'ccm'}>{svc}</Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="rpm">Clinic {current.clinic}%</Badge>
-                          <Badge variant="ccm">Hicare {current.hicare}%</Badge>
-                        </div>
-                        <div className="mt-2 h-1.5 w-36 bg-slate-100 rounded-full overflow-hidden flex">
-                          <div className="h-full bg-primary" style={{ width:`${current.clinic}%` }} />
-                          <div className="h-full bg-blue-200" style={{ width:`${current.hicare}%` }} />
-                        </div>
+                        {current ? (
+                          <>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant="rpm">Clinic {current.clinicPct}%</Badge>
+                              <Badge variant="ccm">Hicare {current.hicarePct}%</Badge>
+                            </div>
+                            <div className="mt-2 h-1.5 w-36 bg-slate-100 rounded-full overflow-hidden flex">
+                              <div className="h-full bg-primary" style={{ width:`${current.clinicPct}%` }} />
+                              <div className="h-full bg-blue-200" style={{ width:`${current.hicarePct}%` }} />
+                            </div>
+                          </>
+                        ) : <span className="text-slate-400 text-sm">—</span>}
                       </TableCell>
-                      <TableCell mono muted>2025-03</TableCell>
+                      <TableCell mono muted>{current?.effectiveFrom ?? '—'}</TableCell>
                       <TableCell align="right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setHistoryModal({ open:true, type:svc })}
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => setHistoryModal({ open:true, type:svc })}>
                           View history
                         </Button>
                       </TableCell>
@@ -308,37 +239,43 @@ export function ClinicSettingsPage() {
             </Table>
           </Card>
 
-          {/* ⑤ Biller Fee */}
+          {/* ④ Biller Fee */}
           <Card>
             <CardHeader icon="receipt" title="Biller Fee" badge={<ReadOnlyBadge />} />
             <CardBody>
-              <div className="grid grid-cols-3 gap-8 items-end">
-                <div><FieldLabel>Fee Type</FieldLabel><FieldValue>Percentage (%)</FieldValue></div>
-                <div>
-                  <FieldLabel>Fee Value</FieldLabel>
-                  <p className="text-2xl font-extrabold text-slate-900 mt-1">5.0%</p>
-                </div>
-                <div><FieldLabel>Effective From</FieldLabel><FieldValue mono>2025-01</FieldValue></div>
-              </div>
-              <div className="mt-4 p-3 bg-slate-50 rounded-lg">
-                <p className="text-[10px] text-slate-500 leading-relaxed">
-                  <span className="font-bold text-slate-600">계산 예시:</span>
-                  {' '}Hicare 실수령 = Hicare share − Biller fee &nbsp;·&nbsp; Biller fee = Total invoice × 5.0%
-                </p>
-              </div>
-              <div className="mt-3 flex justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setHistoryModal({ open:true, type:'fee' })}
-                >
+              {currentFee ? (
+                <>
+                  <div className="grid grid-cols-3 gap-8 items-end">
+                    <div>
+                      <FieldLabel>Fee Type</FieldLabel>
+                      <FieldValue>{currentFee.feeType === 'pct' ? 'Percentage (%)' : 'Fixed ($/mo)'}</FieldValue>
+                    </div>
+                    <div>
+                      <FieldLabel>Fee Value</FieldLabel>
+                      <p className="text-2xl font-extrabold text-slate-900 mt-1">
+                        {currentFee.feeType === 'pct'
+                          ? `${Math.abs(currentFee.feeValue)}%`
+                          : `$${Math.abs(currentFee.feeValue)}/mo`}
+                      </p>
+                    </div>
+                    <div><FieldLabel>Effective From</FieldLabel><FieldValue mono>{currentFee.effectiveFrom}</FieldValue></div>
+                  </div>
+                  {currentFee.note && (
+                    <p className="mt-3 text-[11px] text-slate-500 bg-slate-50 rounded-lg p-3">{currentFee.note}</p>
+                  )}
+                </>
+              ) : (
+                <span className="text-slate-400 text-sm">—</span>
+              )}
+              <div className="mt-4 flex justify-end">
+                <Button variant="ghost" size="sm" onClick={() => setHistoryModal({ open:true, type:'fee' })}>
                   View history
                 </Button>
               </div>
             </CardBody>
           </Card>
 
-          {/* ⑥ EMR Access (편집 가능) */}
+          {/* ⑤ EMR Access */}
           <Card>
             <CardHeader
               icon="terminal"
@@ -351,63 +288,44 @@ export function ClinicSettingsPage() {
               }
             />
             <CardBody>
-              {/* EMR 목록 */}
               <div className="space-y-2 mb-4">
                 {emrLinks.map(emr => (
-                  <div key={emr.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg group">
+                  <div key={emr._key} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg group">
                     <span className="material-symbols-outlined text-slate-400 text-sm flex-shrink-0">link</span>
                     <span className="w-28 text-sm font-semibold text-slate-700 flex-shrink-0">{emr.name}</span>
                     <input
                       className="flex-1 text-xs font-mono bg-transparent border-none outline-none text-primary focus:bg-white focus:px-2 focus:border focus:border-blue-300 focus:rounded transition-all"
                       value={emr.url}
                       onChange={e => setEmrLinks(prev =>
-                        prev.map(l => l.id === emr.id ? { ...l, url: e.target.value } : l)
+                        prev.map(l => l._key === emr._key ? { ...l, url: e.target.value } : l)
                       )}
                     />
-                    <Button
-                      variant="ghost" size="sm" iconOnly
-                      className="opacity-0 group-hover:opacity-100"
-                      onClick={() => window.open(emr.url, '_blank')}
-                    >
+                    <Button variant="ghost" size="sm" iconOnly className="opacity-0 group-hover:opacity-100"
+                      onClick={() => window.open(emr.url, '_blank')}>
                       <span className="material-symbols-outlined text-sm">open_in_new</span>
                     </Button>
-                    <Button
-                      variant="ghost" size="sm" iconOnly
-                      className="opacity-0 group-hover:opacity-100 hover:text-error"
-                      onClick={() => removeEmr(emr.id)}
-                    >
+                    <Button variant="ghost" size="sm" iconOnly className="opacity-0 group-hover:opacity-100 hover:text-error"
+                      onClick={() => removeEmr(emr._key)}>
                       <span className="material-symbols-outlined text-sm">close</span>
                     </Button>
                   </div>
                 ))}
               </div>
 
-              {/* EMR 추가 */}
               <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
-                <TextInput
-                  className="w-32"
-                  placeholder="EMR name"
-                  value={newEmr.name}
-                  onChange={e => setNewEmr(p => ({ ...p, name: e.target.value }))}
-                />
-                <TextInput
-                  className="flex-1"
-                  placeholder="https://..."
-                  value={newEmr.url}
-                  onChange={e => setNewEmr(p => ({ ...p, url: e.target.value }))}
-                />
-                <Button
-                  variant="secondary"
-                  leftIcon={<span className="material-symbols-outlined text-sm">add</span>}
-                  onClick={addEmr}
-                >
+                <TextInput className="w-32" placeholder="EMR name"
+                  value={newEmr.name} onChange={e => setNewEmr(p => ({ ...p, name: e.target.value }))} />
+                <TextInput className="flex-1" placeholder="https://..."
+                  value={newEmr.url} onChange={e => setNewEmr(p => ({ ...p, url: e.target.value }))} />
+                <Button variant="secondary" leftIcon={<span className="material-symbols-outlined text-sm">add</span>} onClick={addEmr}>
                   Add EMR
                 </Button>
               </div>
 
-              {/* 저장 */}
               <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
-                <Button variant="ghost" onClick={() => {}}>Cancel</Button>
+                <Button variant="ghost" onClick={() => {
+                  setEmrLinks((detail?.emrLinks ?? []).map((e, i) => ({ ...e, _key: i })))
+                }}>Cancel</Button>
                 <Button variant="primary" onClick={saveEmr}>Save EMR links</Button>
               </div>
             </CardBody>
@@ -420,33 +338,42 @@ export function ClinicSettingsPage() {
       <Modal
         open={historyModal.open}
         onClose={() => setHistoryModal(p => ({ ...p, open:false }))}
-        title={
-          historyModal.type === 'fee' ? 'Biller Fee History' :
-          `${historyModal.type} Split History`
-        }
-        subtitle="원서버 기준 변경 이력 (소급 적용 없음)"
+        title={historyModal.type === 'fee' ? 'Biller Fee History' : `${historyModal.type} Split History`}
+        subtitle="변경 이력 (소급 적용 없음)"
       >
         <div className="space-y-3">
-          {(historyRows as (SplitHistory|FeeHistory)[]).map((row, idx) => {
-            const isCurrent = idx === 0
-            const detail = 'clinic' in row
-              ? <><Badge variant="rpm">Clinic {row.clinic}%</Badge><Badge variant="ccm">Hicare {row.hicare}%</Badge></>
-              : <span className="text-sm font-bold text-slate-800">{(row as FeeHistory).type} · {(row as FeeHistory).val}</span>
-            return (
-              <div key={idx} className={`flex gap-3 p-3 rounded-lg ${isCurrent ? 'bg-blue-50/60 border border-blue-100' : 'bg-slate-50'}`}>
-                <span className={`h-2 w-2 rounded-full mt-1.5 flex-shrink-0 ${isCurrent ? 'bg-primary' : 'bg-slate-300'}`} />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {detail}
-                    {isCurrent && <Badge variant="active">현재 적용</Badge>}
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    {row.period} · 변경일 {row.changedAt}
-                  </p>
-                </div>
-              </div>
-            )
-          })}
+          {historyModal.type === 'fee'
+            ? feeHistoryRows.map((row, idx) => (
+                <HistoryItem key={row.id} isCurrent={idx === 0}
+                  period={feePeriodLabel(feeHistoryRows, idx)}
+                  changedAt={new Date(row.changedAt).toLocaleDateString()}
+                  detail={
+                    <span className="text-sm font-bold text-slate-800">
+                      {row.feeType === 'pct' ? 'Percentage' : 'Fixed'} · {
+                        row.feeType === 'pct'
+                          ? `${Math.abs(row.feeValue)}%`
+                          : `$${Math.abs(row.feeValue)}/mo`
+                      }
+                    </span>
+                  }
+                />
+              ))
+            : splitHistoryRows.map((row, idx) => (
+                <HistoryItem key={row.id} isCurrent={idx === 0}
+                  period={splitPeriodLabel(splitHistoryRows, idx)}
+                  changedAt={new Date(row.changedAt).toLocaleDateString()}
+                  detail={
+                    <>
+                      <Badge variant="rpm">Clinic {row.clinicPct}%</Badge>
+                      <Badge variant="ccm">Hicare {row.hicarePct}%</Badge>
+                    </>
+                  }
+                />
+              ))
+          }
+          {(historyModal.type === 'fee' ? feeHistoryRows : splitHistoryRows).length === 0 && (
+            <p className="text-sm text-slate-400 text-center py-4">이력 없음</p>
+          )}
         </div>
       </Modal>
 
@@ -472,3 +399,22 @@ function ReadOnlyBadge() {
   )
 }
 
+function HistoryItem({ isCurrent, period, changedAt, detail }: {
+  isCurrent: boolean
+  period:    string
+  changedAt: string
+  detail:    React.ReactNode
+}) {
+  return (
+    <div className={`flex gap-3 p-3 rounded-lg ${isCurrent ? 'bg-blue-50/60 border border-blue-100' : 'bg-slate-50'}`}>
+      <span className={`h-2 w-2 rounded-full mt-1.5 flex-shrink-0 ${isCurrent ? 'bg-primary' : 'bg-slate-300'}`} />
+      <div className="flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          {detail}
+          {isCurrent && <Badge variant="active">현재 적용</Badge>}
+        </div>
+        <p className="text-[10px] text-slate-400 mt-1">{period} · 변경일 {changedAt}</p>
+      </div>
+    </div>
+  )
+}

@@ -1,37 +1,39 @@
+import { useState, useEffect } from 'react'
 import { CLINICS, ACTIVE_PATIENTS } from '../data/clinics'
 import type { Clinic, ServiceType } from '../data/clinics'
 
+interface ApiClinic { id: string; code: string }
+
 // ── useClinics ───────────────────────────────────────────────
-// 현재: 목 데이터 반환
-// API 전환 시: 이 파일만 수정 (예: useQuery, SWR, fetch 등)
-//
-// interface UseClinicsResult {
-//   clinics:  Clinic[]
-//   loading:  boolean
-//   error:    Error | null
-// }
+// GET /api/clinics 로 DB UUID(dbId)를 가져와 목 데이터와 병합
 
 export function useClinics() {
-  // TODO: replace with → fetch('/api/clinics').then(r => r.json())
-  return {
-    clinics: CLINICS,
-    loading: false,
-    error:   null,
-  }
+  const [clinics, setClinics] = useState<Clinic[]>(CLINICS)
+
+  useEffect(() => {
+    fetch('/api/clinics')
+      .then(r => r.json())
+      .then((apiClinics: ApiClinic[]) => {
+        setClinics(prev =>
+          prev.map(c => {
+            const match = apiClinics.find(a => a.code === c.code)
+            return match ? { ...c, dbId: match.id } : c
+          }),
+        )
+      })
+      .catch(console.error)
+  }, [])
+
+  return { clinics, loading: false, error: null }
 }
 
 export function useClinic(id: number) {
-  // TODO: replace with → fetch(`/api/clinics/${id}`)
-  const clinic = CLINICS.find(c => c.id === id) ?? null
-  return {
-    clinic,
-    loading: false,
-    error:   null,
-  }
+  const { clinics } = useClinics()
+  const clinic = clinics.find(c => c.id === id) ?? null
+  return { clinic, loading: false, error: null }
 }
 
 export function useActivePatients(clinicId: number, service: ServiceType) {
-  // TODO: replace with → fetch(`/api/clinics/${clinicId}/patients?service=${service}`)
   return ACTIVE_PATIENTS[clinicId]?.[service] ?? 0
 }
 
