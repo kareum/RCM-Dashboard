@@ -96,8 +96,7 @@ tbody td { padding: 9px 10px; border-top: 0.5px solid var(--color-border-tertiar
       <div class="filter-field">
         <label>Clinic</label>
         <select id="f-clinic">
-          <option value="">— Select clinic —</option>
-          <option value="Sunrise Health Center">Sunrise Health Center</option>
+          <option value="Sunrise Health Center" selected>Sunrise Health Center</option>
           <option value="Westside Clinic">Westside Clinic</option>
           <option value="Lakeview Medical">Lakeview Medical</option>
           <option value="Pacific Care Group">Pacific Care Group</option>
@@ -108,8 +107,7 @@ tbody td { padding: 9px 10px; border-top: 0.5px solid var(--color-border-tertiar
       <div class="filter-field">
         <label>Month</label>
         <select id="f-month">
-          <option value="">— Select month —</option>
-          <option value="2025-03">March 2025</option>
+          <option value="2025-03" selected>March 2025</option>
           <option value="2025-02">February 2025</option>
           <option value="2025-01">January 2025</option>
           <option value="2024-12">December 2024</option>
@@ -118,8 +116,8 @@ tbody td { padding: 9px 10px; border-top: 0.5px solid var(--color-border-tertiar
       <div class="filter-field">
         <label>Claim status</label>
         <select id="f-status">
-          <option value="Pre-claim">Pre-claim only</option>
           <option value="">All statuses</option>
+          <option value="Pre-claim">Pre-claim only</option>
           <option value="Pending">Pending</option>
           <option value="Denied">Denied (re-submit)</option>
         </select>
@@ -227,7 +225,7 @@ function loadData(){
   const clinic=document.getElementById('f-clinic').value;
   const month=document.getElementById('f-month').value;
   const status=document.getElementById('f-status').value;
-  if(!clinic||!month){alert('클리닉과 월을 선택해주세요.');return;}
+  if(!clinic||!month) return;
   loaded=allClaims.filter(c=>{
     if(c.clinic!==clinic) return false;
     if(c.month!==month) return false;
@@ -314,4 +312,7 @@ function handleDownload(type){
   const scope=selected.size>0?selected.size+'건 선택':loaded.length+'건 전체';
   alert(`${type} 다운로드\n대상: ${scope}\n\n실제 구현 시 DB에서 해당 Claim 데이터를 읽어 양식을 생성합니다.`);
 }
+
+// 페이지 열자마자 기본값으로 loadDB
+document.addEventListener('DOMContentLoaded', loadData);
 </script>
