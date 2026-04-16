@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Billing Dashboard — DB Schema</title>
+<style>
+  :root {
+    --font-sans: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "SF Mono", "Fira Code", "Consolas", monospace;
+    --bg: #f5f4ef;
+    --surface: #ffffff;
+    --border: #e8e7e1;
+    --border-strong: #d0cfc9;
+    --text: #1a1918;
+    --text-2: #5f5e5a;
+    --text-3: #9e9c97;
+    --blue-bg: #E6F1FB; --blue-text: #0C447C; --blue-border: #185FA5;
+    --green-bg: #EAF3DE; --green-text: #27500A; --green-border: #3B6D11;
+    --amber-bg: #FAEEDA; --amber-text: #633806; --amber-border: #854F0B;
+    --purple-bg: #EEEDFE; --purple-text: #3C3489; --purple-border: #534AB7;
+    --teal-bg: #E1F5EE; --teal-text: #085041; --teal-border: #0F6E56;
+    --red-bg: #FCEBEB; --red-text: #791F1F;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); background: var(--bg); color: var(--text); padding: 40px 32px; min-height: 100vh; }
+  .page-header { margin-bottom: 36px; }
+  .page-header h1 { font-size: 22px; font-weight: 600; margin-bottom: 6px; }
+  .page-header p { font-size: 13px; color: var(--text-2); }
+  .meta-row { display: flex; gap: 20px; margin-top: 10px; flex-wrap: wrap; }
+  .meta-item { font-size: 12px; color: var(--text-3); }
+  .meta-item strong { color: var(--text-2); font-weight: 500; }
+
+  .legend { display: flex; gap: 20px; margin-bottom: 32px; flex-wrap: wrap; padding: 12px 16px; background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; }
+  .leg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
+  .leg code { font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
+  .pk-c { color: var(--blue-text); }
+  .fk-c { color: var(--amber-text); }
+  .idx-c { color: var(--green-text); }
+  .new-c { color: #791F1F; }
+
+  .group { margin-bottom: 36px; }
+  .group-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .group-tag { font-size: 11px; font-weight: 600; padding: 3px 11px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .g-ext    { background: var(--purple-bg); color: var(--purple-text); }
+  .g-core   { background: var(--blue-bg);   color: var(--blue-text); }
+  .g-billing{ background: var(--green-bg);  color: var(--green-text); }
+  .g-hist   { background: var(--amber-bg);  color: var(--amber-text); }
+  .g-config { background: var(--teal-bg);   color: var(--teal-text); }
+  .group-desc { font-size: 13px; color: var(--text-2); }
+
+  .tables { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+  .tbl-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .tbl-card.updated { border-color: #E24B4A; border-width: 1.5px; }
+  .tbl-name { display: flex; align-items: center; justify-content: space-between; padding: 10px 13px; border-bottom: 0.5px solid var(--border); background: #faf9f6; }
+  .tbl-name-text { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text); }
+  .tbl-note { font-size: 10px; color: var(--text-3); }
+  .new-badge { font-size: 9px; font-weight: 700; background: var(--red-bg); color: var(--red-text); padding: 1px 6px; border-radius: 4px; margin-left: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tbl-fields { padding: 6px 0; }
+  .field-row { display: flex; align-items: center; padding: 3px 13px; font-size: 11px; gap: 0; transition: background 0.1s; }
+  .field-row:hover { background: #f5f4ef; }
+  .field-row.changed { background: #FAEEDA30; }
+  .field-tag { font-family: var(--font-mono); font-size: 10px; font-weight: 700; min-width: 30px; }
+  .pk-tag  { color: var(--blue-text); }
+  .fk-tag  { color: var(--amber-text); }
+  .idx-tag { color: var(--green-text); }
+  .field-name { font-family: var(--font-mono); color: var(--text); flex: 1; font-size: 11px; }
+  .field-type { color: var(--text-3); font-size: 10px; font-family: var(--font-mono); text-align: right; }
+  .field-divider { border: none; border-top: 0.5px solid var(--border); margin: 4px 0; }
+  .field-note { font-size: 10px; color: var(--text-3); padding: 2px 13px 4px; font-style: italic; }
+
+  .section-note { background: var(--blue-bg); border: 0.5px solid var(--blue-border); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 12px; color: var(--blue-text); }
+  .change-note { background: var(--red-bg); border: 0.5px solid #F09595; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 12px; color: var(--red-text); }
+
+  .impl-order { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-top: 36px; }
+  .impl-order h3 { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+  .impl-steps { display: flex; flex-direction: column; gap: 10px; }
+  .impl-step { display: flex; align-items: flex-start; gap: 12px; }
+  .step-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .s1 { background: var(--purple-bg); color: var(--purple-text); }
+  .s2 { background: var(--blue-bg); color: var(--blue-text); }
+  .s3 { background: var(--green-bg); color: var(--green-text); }
+  .s4 { background: var(--amber-bg); color: var(--amber-text); }
+  .step-content { flex: 1; }
+  .step-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .step-tables { font-size: 12px; color: var(--text-2); font-family: var(--font-mono); }
+
+  @media print {
+    body { padding: 20px; background: white; }
+    .tables { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Billing Dashboard — DB Schema</h1>
+  <p>RPM/CCM Billing 대시보드 내부 DB 테이블 설계서</p>
+  <div class="meta-row">
+    <span class="meta-item"><strong>총 테이블</strong> 19개</span>
+    <span class="meta-item"><strong>그룹</strong> 5개 (외부 API 원본 / 마스터 / Billing 핵심 / 이력 / 설정)</span>
+    <span class="meta-item"><strong>업데이트</strong> 2025-03-30 — patient_clinic_assignments 추가, patients.clinic_id 제거, Full sync 필드 반영</span>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="leg"><code class="pk-c">PK</code> Primary key</div>
+  <div class="leg"><code class="fk-c">FK</code> Foreign key</div>
+  <div class="leg"><code class="idx-c">IDX</code> Index</div>
+  <div class="leg"><span style="display:inline-block;width:10px;height:10px;background:#FCEBEB;border:1px solid #F09595;border-radius:2px;margin-right:2px"></span> 신규/변경 테이블</div>
+</div>
+
+<!-- GROUP A -->
+<div class="group">
+  <div class="group-header">
+    <span class="group-tag g-ext">A · 외부 API 원본</span>
+    <span class="group-desc">외부 사이트에서 실시간 수신 — raw + 변환본 둘 다 저장</span>
+  </div>
+  <div class="tables">
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">api_sync_log</span><span class="tbl-note">API 호출 이력</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">endpoint</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">synced_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">status</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">record_count</span><span class="field-type">int</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">error_message</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">sync_type</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">triggered_by</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">duration_ms</span><span class="field-type">int</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">sync_type: scheduled / manual</div>
+        <div class="field-note">triggered_by: batch / user:이름</div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">patients_raw</span><span class="tbl-note">외부 환자 원본</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">external_patient_id</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">raw_payload</span><span class="field-type">jsonb</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">synced_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">source_system</span><span class="field-type">varchar</span></div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">billing_raw</span><span class="tbl-note">외부 billing 원본</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">external_billing_id</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">raw_payload</span><span class="field-type">jsonb</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">synced_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">billing_month</span><span class="field-type">date</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GROUP B -->
+<div class="group">
+  <div class="group-header">
+    <span class="group-tag g-core">B · 내부 마스터 (변환본)</span>
+    <span class="group-desc">raw에서 변환된 정규화 데이터 — 환자는 클리닉과 독립 관리</span>
+  </div>
+  <div class="change-note">
+    ⚡ 변경사항 — patients 테이블에서 <code>clinic_id</code> 제거. 환자-클리닉 소속 관계는 <strong>patient_clinic_assignments</strong> 테이블로 분리 관리. 환자는 유일하며 클리닉 간 이동 이력 추적 가능.<br>
+    🔄 sync 추가 — clinics, patients에 <code>last_synced_at</code>, <code>sync_hash</code> 필드 추가. Full sync 방식으로 전체 비교 후 신규/변경/비활성 처리.
+  </div>
+  <div class="tables">
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">clinics</span><span class="tbl-note">클리닉 마스터</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">name</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">state</span><span class="field-type">varchar(2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">timezone</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">phone</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">address</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">contact_name</span><span class="field-type">varchar</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">CMS-1500 billing info</div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">ein</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">npi</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">taxonomy_code</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">pos_code</span><span class="field-type">varchar(2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">accept_assignment</span><span class="field-type">boolean</span></div>
+        <div class="field-divider"></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">service_types</span><span class="field-type">varchar[]</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">emr_links</span><span class="field-type">jsonb</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">is_active</span><span class="field-type">boolean</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">created_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">Sync fields</div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">last_synced_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">sync_hash</span><span class="field-type">varchar</span></div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">patients</span><span class="tbl-note">환자 마스터 (클리닉 독립)</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">external_patient_id</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">medicare_id</span><span class="field-type">varchar UNIQUE</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">name</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">date_of_birth</span><span class="field-type">date</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">insurance_type</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">qmb_status</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">deductible_status</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">billing_hold</span><span class="field-type">boolean</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">billing_hold_reason</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">service_types</span><span class="field-type">varchar[]</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">icd10_codes</span><span class="field-type">varchar[]</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">synced_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">created_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">Sync fields</div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">last_synced_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">sync_hash</span><span class="field-type">varchar</span></div>
+      </div>
+    </div>
+    <div class="tbl-card updated">
+      <div class="tbl-name"><span class="tbl-name-text">patient_clinic_assignments<span class="new-badge">NEW</span></span><span class="tbl-note">환자-클리닉 소속 이력</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">patient_id</span><span class="field-type">uuid → patients</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">clinic_id</span><span class="field-type">uuid → clinics</span></div>
+        <div class="field-divider"></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">assigned_at</span><span class="field-type">date</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">unassigned_at</span><span class="field-type">date NULL</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">is_current</span><span class="field-type">boolean</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">changed_by</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">changed_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">is_current=true → 현재 소속 / unassigned_at NULL → 현재 소속</div>
+        <div class="field-note">UNIQUE(patient_id) WHERE is_current=true</div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">cpt_rates</span><span class="tbl-note">CPT 단가 (기간별)</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">cpt_code</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">description</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">insurance_type</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">rate</span><span class="field-type">numeric(10,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">effective_from</span><span class="field-type">date</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">effective_to</span><span class="field-type">date NULL</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">is_active</span><span class="field-type">boolean</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">created_at</span><span class="field-type">timestamp</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GROUP C -->
+<div class="group">
+  <div class="group-header">
+    <span class="group-tag g-billing">C · Billing 핵심</span>
+    <span class="group-desc">Claim → ERA 매칭 → Invoice → Payment 전체 흐름</span>
+  </div>
+  <div class="section-note">
+    claims.clinic_id는 직접 보유 — 청구 시점의 클리닉을 고정해야 하기 때문. patient_clinic_assignments와 별개로 유지.
+  </div>
+  <div class="tables">
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">claims</span><span class="tbl-note">청구 단위 (환자+월)</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">patient_id</span><span class="field-type">uuid → patients</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">clinic_id</span><span class="field-type">uuid → clinics</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">billing_month</span><span class="field-type">date</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">status</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">total_billed</span><span class="field-type">numeric(10,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">total_paid</span><span class="field-type">numeric(10,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">claim_date</span><span class="field-type">date</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">submitted_at</span><span class="field-type">timestamp NULL</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">aging_days</span><span class="field-type">int</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">created_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">status: pre-claim / pending / paid / denied / partial</div>
+        <div class="field-note">UNIQUE(patient_id, billing_month)</div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">claim_cpt_lines</span><span class="tbl-note">CPT 건별 내역</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">claim_id</span><span class="field-type">uuid → claims</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">cpt_code</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">description</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">billed_amount</span><span class="field-type">numeric(10,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">paid_amount</span><span class="field-type">numeric(10,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">adjustment_amount</span><span class="field-type">numeric(10,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">adjustment_reason</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">service_date</span><span class="field-type">date</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">units</span><span class="field-type">int</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">icd10_ref</span><span class="field-type">varchar</span></div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">eob_files</span><span class="tbl-note">EOB 업로드 이력</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">filename</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">file_path</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">eob_type</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">billing_month</span><span class="field-type">date</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">uploaded_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">parse_status</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">matched_count</span><span class="field-type">int</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">unmatched_count</span><span class="field-type">int</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">is_reissued</span><span class="field-type">boolean</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">uploaded_by</span><span class="field-type">varchar</span></div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">era_matches</span><span class="tbl-note">EOB-Claim 매칭 결과</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">eob_file_id</span><span class="field-type">uuid → eob_files</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">claim_id</span><span class="field-type">uuid → claims</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">medicare_id</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">match_type</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">check_number</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">era_date</span><span class="field-type">date</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">paid_amount</span><span class="field-type">numeric(10,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">matched_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">matched_by</span><span class="field-type">varchar</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">match_type: auto / manual</div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">invoices</span><span class="tbl-note">클리닉 단위 Invoice</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">clinic_id</span><span class="field-type">uuid → clinics</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">billing_month</span><span class="field-type">date</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">invoice_number</span><span class="field-type">varchar UNIQUE</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">status</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">total_billed</span><span class="field-type">numeric(10,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">invoice_amount</span><span class="field-type">numeric(10,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">split_clinic_pct</span><span class="field-type">numeric(5,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">split_hicare_pct</span><span class="field-type">numeric(5,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">due_date</span><span class="field-type">date</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">voided_at</span><span class="field-type">timestamp NULL</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">replaces_invoice_id</span><span class="field-type">uuid NULL → invoices</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">created_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">status: unpaid / partial / paid / settled / void / reissue</div>
+        <div class="field-note">UNIQUE(clinic_id, billing_month) WHERE status != 'void'</div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">invoice_claims</span><span class="tbl-note">Invoice-Claim 연결</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">invoice_id</span><span class="field-type">uuid → invoices</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">claim_id</span><span class="field-type">uuid → claims</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">1 Invoice : N Claims (클리닉+월 기준)</div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">payments</span><span class="tbl-note">수금 기록</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">invoice_id</span><span class="field-type">uuid → invoices</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">payment_date</span><span class="field-type">date</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">amount</span><span class="field-type">numeric(10,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">method</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">reference_number</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">note</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">recorded_by</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">created_at</span><span class="field-type">timestamp</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GROUP D -->
+<div class="group">
+  <div class="group-header">
+    <span class="group-tag g-hist">D · 이력 관리</span>
+    <span class="group-desc">모든 상태 변경 및 액션 이력 보관 — append-only, 삭제 없음</span>
+  </div>
+  <div class="tables">
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">claim_status_history</span><span class="tbl-note">Claim 상태 변경</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">claim_id</span><span class="field-type">uuid → claims</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">from_status</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">to_status</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">reason</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">changed_by</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">changed_at</span><span class="field-type">timestamp</span></div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">claimmd_submissions</span><span class="tbl-note">ClaimMD 제출 이력</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">claim_id</span><span class="field-type">uuid → claims</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">submission_type</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">submitted_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">claimmd_ref_id</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">response_status</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">response_payload</span><span class="field-type">jsonb</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">submitted_by</span><span class="field-type">varchar</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">submission_type: initial / resubmit</div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">invoice_history</span><span class="tbl-note">Invoice 생성/수정/Void</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">invoice_id</span><span class="field-type">uuid → invoices</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">action</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">from_status</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">to_status</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">note</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">changed_by</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">changed_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">action: created / updated / voided / reissued / sent</div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">revenue_split_history</span><span class="tbl-note">Revenue split 변경</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">clinic_id</span><span class="field-type">uuid → clinics</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">service_type</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">clinic_pct</span><span class="field-type">numeric(5,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">hicare_pct</span><span class="field-type">numeric(5,2)</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">effective_from</span><span class="field-type">date</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">changed_by</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">changed_at</span><span class="field-type">timestamp</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GROUP E -->
+<div class="group">
+  <div class="group-header">
+    <span class="group-tag g-config">E · 설정 / 시스템</span>
+    <span class="group-desc">사용자, 알림 관리</span>
+  </div>
+  <div class="tables">
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">users</span><span class="tbl-note">사용자</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag idx-tag">IDX</span><span class="field-name">email</span><span class="field-type">varchar UNIQUE</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">name</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">role</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">is_active</span><span class="field-type">boolean</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">created_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">role: admin / billing / viewer</div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">notifications</span><span class="tbl-note">알림 이력</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag fk-tag">FK</span><span class="field-name">user_id</span><span class="field-type">uuid → users</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">type</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">title</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">body</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">reference_id</span><span class="field-type">uuid NULL</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">is_read</span><span class="field-type">boolean</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">created_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">type: ar_aging / pre_claim_ready / eob_reissued / payment_due</div>
+      </div>
+    </div>
+    <div class="tbl-card">
+      <div class="tbl-name"><span class="tbl-name-text">sync_settings</span><span class="tbl-note">동기화 설정</span></div>
+      <div class="tbl-fields">
+        <div class="field-row"><span class="field-tag pk-tag">PK</span><span class="field-name">id</span><span class="field-type">uuid</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">target</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">schedule_cron</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">is_enabled</span><span class="field-type">boolean</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">last_run_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">last_run_status</span><span class="field-type">varchar</span></div>
+        <div class="field-row"><span class="field-tag"></span><span class="field-name">updated_at</span><span class="field-type">timestamp</span></div>
+        <div class="field-divider"></div>
+        <div class="field-note">target: clinics / patients / billing</div>
+        <div class="field-note">schedule_cron: "0 3 * * *" (매일 03:00 AM)</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="impl-order">
+  <h3>구현 순서</h3>
+  <div class="impl-steps">
+    <div class="impl-step">
+      <div class="step-num s1">1</div>
+      <div class="step-content">
+        <div class="step-title">기반 설정</div>
+        <div class="step-tables">users → clinics → api_sync_log → sync_settings</div>
+      </div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num s2">2</div>
+      <div class="step-content">
+        <div class="step-title">외부 데이터 수신 + 마스터 (Full sync)</div>
+        <div class="step-tables">patients_raw → patients → patient_clinic_assignments → billing_raw → cpt_rates</div>
+        <div class="step-tables" style="margin-top:4px;color:#9e9c97;font-size:11px;">신규=INSERT · 변경=UPDATE+hash갱신 · 삭제감지=is_active false · 클리닉이동=assignments 이력</div>
+      </div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num s3">3</div>
+      <div class="step-content">
+        <div class="step-title">Billing 핵심 흐름</div>
+        <div class="step-tables">claims → claim_cpt_lines → eob_files → era_matches → invoices → invoice_claims → payments</div>
+      </div>
+    </div>
+    <div class="impl-step">
+      <div class="step-num s4">4</div>
+      <div class="step-content">
+        <div class="step-title">이력 + 알림</div>
+        <div class="step-tables">claim_status_history → claimmd_submissions → invoice_history → revenue_split_history → notifications</div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:20px;padding-top:16px;border-top:0.5px solid var(--border);">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px;">동기화 전략 요약</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead>
+        <tr style="background:#faf9f6;">
+          <th style="text-align:left;padding:7px 10px;border:0.5px solid var(--border);font-weight:500;color:var(--text-2)">대상</th>
+          <th style="text-align:left;padding:7px 10px;border:0.5px solid var(--border);font-weight:500;color:var(--text-2)">방식</th>
+          <th style="text-align:left;padding:7px 10px;border:0.5px solid var(--border);font-weight:500;color:var(--text-2)">자동 주기</th>
+          <th style="text-align:left;padding:7px 10px;border:0.5px solid var(--border);font-weight:500;color:var(--text-2)">수동 트리거</th>
+          <th style="text-align:left;padding:7px 10px;border:0.5px solid var(--border);font-weight:500;color:var(--text-2)">비고</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);font-family:var(--font-mono);font-size:11px;">clinics</td>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);">Full sync</td>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);">매일 03:00 AM</td>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);">설정 화면 Sync now</td>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);color:var(--text-3);">변경 빈도 낮음</td>
+        </tr>
+        <tr>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);font-family:var(--font-mono);font-size:11px;">patients</td>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);">Full sync</td>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);">매일 03:00 AM</td>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);">설정 화면 Sync now</td>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);color:var(--text-3);">클리닉 이동 시 assignments 이력 생성</td>
+        </tr>
+        <tr>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);font-family:var(--font-mono);font-size:11px;">billing</td>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);">Full sync</td>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);">매일 03:00 AM</td>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);">설정 화면 Sync now</td>
+          <td style="padding:7px 10px;border:0.5px solid var(--border);color:var(--text-3);">billing_month 기준 비교</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:10px;font-size:11px;color:var(--text-3);">
+      처리 규칙: 신규 external_id → INSERT &nbsp;·&nbsp; 필드값 변경(hash 불일치) → UPDATE &nbsp;·&nbsp; 원서버에서 사라짐 → is_active = false (삭제 X)
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

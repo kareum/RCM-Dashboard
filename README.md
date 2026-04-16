@@ -90,8 +90,8 @@ Billing data 생성
 | D. 이력 관리 | `invoice_history`, `revenue_split_history` | 모든 상태 변경 이력 |
 | E. 설정 | `users`, `notifications`, `sync_settings` | 시스템 설정 및 알림 |
 
-> 상세 스키마 → [`database/schema.html`](./database/schema.html)  
-> 동기화 설계 → [`database/sync-design.html`](./database/sync-design.html)
+> 상세 스키마 → [`database/schema.html`](./docs/billing_db_schema.html)  
+> 동기화 설계 → [`database/sync-design.html`](./docs/billing_sync_design.html)
 
 ### 핵심 설계 포인트
 
