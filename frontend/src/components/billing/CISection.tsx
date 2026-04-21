@@ -1,37 +1,24 @@
-import { useCIForm }    from '../../hooks/useCIForm'
+import { Button }      from '../ui'
+import { MoneyInput }  from './MoneyInput'
+import { SelectInput } from './SelectInput'
+import { CalcBox }     from './CalcBox'
+import { TotalCard }   from './TotalCard'
+import { fmtMoney }    from '../../lib/billingCalcs'
 import type { CIFormState } from '../../hooks/useCIForm'
-import { Button }       from '../ui'
-import { MoneyInput }   from './MoneyInput'
-import { SelectInput }  from './SelectInput'
-import { CalcBox }      from './CalcBox'
-import { TotalCard }    from './TotalCard'
-import { fmtMoney }     from '../../lib/billingCalcs'
-import type { BillingClinic, InvoiceEntryRecord } from '../../pages/billing/data'
-import type { SaveCiPayload }                      from '../../hooks/useInvoiceEntries'
+import type { BillingClinic } from '../../pages/billing/data'
 
 // ── Props ─────────────────────────────────────────────────────
+// CISection은 CIFormState 인터페이스에만 의존합니다.
+// 어떤 훅이 이 상태를 만들었는지 알지 못합니다.
 
 export interface CISectionProps {
-  clinic:     BillingClinic
-  rpmInv:     number
-  ccmInv:     number
-  fee:        number
-  existingCi: InvoiceEntryRecord | null
-  onSaveCi:   (payload: SaveCiPayload) => Promise<void>
+  form:   CIFormState
+  clinic: BillingClinic   // services 목록 조회에만 사용 (RPM/CCM 노출 여부)
 }
 
 // ── View ──────────────────────────────────────────────────────
 
-export function CISection(props: CISectionProps) {
-  const f: CIFormState = useCIForm(
-    props.clinic,
-    props.rpmInv,
-    props.ccmInv,
-    props.fee,
-    props.existingCi,
-    props.onSaveCi,
-  )
-
+export function CISection({ form: f, clinic }: CISectionProps) {
   return (
     <div className="border border-slate-200 rounded-md">
 
@@ -94,7 +81,11 @@ export function CISection(props: CISectionProps) {
                     className="w-full px-2.5 py-1.5 text-[13px] border border-slate-200 rounded-md bg-white focus:outline-none focus:border-[#185FA5]"
                   />
                 </div>
-                <SelectInput label="Payment method" id="ci-method" value={f.totalMethod} onChange={f.setTotalMethod} options={['ACH','Zelle','Check']} />
+                <SelectInput
+                  label="Payment method" id="ci-method"
+                  value={f.totalMethod} onChange={f.setTotalMethod}
+                  options={['ACH', 'Zelle', 'Check']}
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
@@ -125,7 +116,7 @@ export function CISection(props: CISectionProps) {
           {/* Split mode */}
           {f.mode === 'split' && (
             <div className="flex flex-col gap-3">
-              {props.clinic.services.includes('RPM') && (
+              {clinic.services.includes('RPM') && (
                 <div className="border border-slate-100 rounded-md overflow-hidden">
                   <div className="flex items-center px-3.5 py-2 bg-slate-50 border-b border-slate-100" style={{ borderLeft: '3px solid #185FA5' }}>
                     <span className="text-[12px] font-medium text-[#0C447C]">RPM — HicareNet deposit</span>
@@ -134,15 +125,15 @@ export function CISection(props: CISectionProps) {
                     <MoneyInput label="RPM deposit amount" id="rpm-ci-amt" value={f.rpmAmt} onChange={f.setRpmAmt} hint={`Expected: ${fmtMoney(f.rpmExpected)}`} />
                     {f.rpmReceived > 0 && (
                       <CalcBox rows={[
-                        { label: 'Expected',    value: fmtMoney(f.rpmExpected),                color: 'text-[#0C447C]' },
-                        { label: 'Received',    value: fmtMoney(f.rpmReceived),                color: 'text-[#27500A]' },
+                        { label: 'Expected',    value: fmtMoney(f.rpmExpected),                 color: 'text-[#0C447C]' },
+                        { label: 'Received',    value: fmtMoney(f.rpmReceived),                 color: 'text-[#27500A]' },
                         { label: 'Uncollected', value: fmtMoney(f.rpmExpected - f.rpmReceived), color: f.rpmExpected - f.rpmReceived > 0 ? 'text-[#791F1F]' : 'text-[#27500A]', separator: true },
                       ]} />
                     )}
                   </div>
                 </div>
               )}
-              {props.clinic.services.includes('CCM') && (
+              {clinic.services.includes('CCM') && (
                 <div className="border border-slate-100 rounded-md overflow-hidden">
                   <div className="flex items-center px-3.5 py-2 bg-slate-50 border-b border-slate-100" style={{ borderLeft: '3px solid #1D9E75' }}>
                     <span className="text-[12px] font-medium text-[#085041]">CCM — HicareNet deposit</span>
@@ -151,8 +142,8 @@ export function CISection(props: CISectionProps) {
                     <MoneyInput label="CCM deposit amount" id="ccm-ci-amt" value={f.ccmAmt} onChange={f.setCcmAmt} hint={`Expected: ${fmtMoney(f.ccmExpected)}`} />
                     {f.ccmReceived > 0 && (
                       <CalcBox rows={[
-                        { label: 'Expected',    value: fmtMoney(f.ccmExpected),                color: 'text-[#0C447C]' },
-                        { label: 'Received',    value: fmtMoney(f.ccmReceived),                color: 'text-[#27500A]' },
+                        { label: 'Expected',    value: fmtMoney(f.ccmExpected),                 color: 'text-[#0C447C]' },
+                        { label: 'Received',    value: fmtMoney(f.ccmReceived),                 color: 'text-[#27500A]' },
                         { label: 'Uncollected', value: fmtMoney(f.ccmExpected - f.ccmReceived), color: f.ccmExpected - f.ccmReceived > 0 ? 'text-[#791F1F]' : 'text-[#27500A]', separator: true },
                       ]} />
                     )}

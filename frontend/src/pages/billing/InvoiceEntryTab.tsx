@@ -1,4 +1,5 @@
 import { useInvoiceForm }              from '../../hooks/useInvoiceForm'
+import { useCIForm }                   from '../../hooks/useCIForm'
 import { calcBilling }                 from '../../lib/billingCalcs'
 import { Card, CardHeader, CardBody }  from '../../components/ui'
 import { ServiceBlock, TotalCard, CISection } from '../../components/billing'
@@ -19,6 +20,16 @@ export interface InvoiceEntryTabProps {
 export function InvoiceEntryTab({ clinic, records, onSaveInvoice, onSaveCi }: InvoiceEntryTabProps) {
   const form  = useInvoiceForm(clinic, records, onSaveInvoice)
   const calcs = calcBilling(clinic, form.rpmInvoice, form.ccmInvoice)
+
+  // CISection에 주입할 상태를 여기서 생성 — 컴포넌트는 인터페이스만 받음
+  const ciForm = useCIForm(
+    clinic,
+    calcs.rpm,
+    calcs.ccm,
+    calcs.fee,
+    form.currentEntry,
+    ci => onSaveCi(form.year, form.month, ci),
+  )
 
   return (
     <div className="flex flex-col gap-3.5 px-6 py-5">
@@ -92,15 +103,11 @@ export function InvoiceEntryTab({ clinic, records, onSaveInvoice, onSaveCi }: In
       <Card>
         <CardHeader icon="account_balance" title="HicareNet Collection" />
         <CardBody padding="sm">
-          {/* key resets CISection state when the billing period changes */}
+          {/* key resets ciForm 상태를 기간 변경 시 초기화 */}
           <CISection
             key={`${form.year}-${form.month}`}
+            form={ciForm}
             clinic={clinic}
-            rpmInv={calcs.rpm}
-            ccmInv={calcs.ccm}
-            fee={calcs.fee}
-            existingCi={form.currentEntry}
-            onSaveCi={ci => onSaveCi(form.year, form.month, ci)}
           />
         </CardBody>
       </Card>
