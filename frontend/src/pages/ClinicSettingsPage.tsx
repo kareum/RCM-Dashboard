@@ -1,125 +1,53 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import {
   Badge, Button, Card, CardHeader, CardBody,
   TextInput, Spinner, Toast, Modal,
   Table, TableHeader, TableRow, TableCell,
   FieldLabel, FieldValue, HintText,
 } from '../components/ui'
-import { useTopNavActions } from '../components/layout/TopNavActionsContext'
-import { useClinics }       from '../hooks/useClinics'
-import { useClinicSettings, splitPeriodLabel, feePeriodLabel } from '../hooks/useClinicSettings'
-import type { EmrLink }     from '../hooks/useClinicSettings'
-import { ClinicListPanel }  from '../components/shared/ClinicListPanel'
-import type { ServiceType } from '../data/clinics'
+import { useTopNavActions }          from '../components/layout/TopNavActionsContext'
+import { useClinicSettingsPage }     from '../hooks/useClinicSettingsPage'
+import { splitPeriodLabel, feePeriodLabel } from '../hooks/useClinicSettings'
+import type { SplitRecord, FeeRecord }      from '../hooks/useClinicSettings'
+import { ClinicListPanel }           from '../components/shared/ClinicListPanel'
+import type { ServiceType }          from '../data/clinics'
 
-// ── 컴포넌트 ────────────────────────────────────────────────
 export function ClinicSettingsPage() {
-  const [activeId,     setActiveId]     = useState(1)
-  const [isSyncing,    setIsSyncing]    = useState(false)
-  const [emrLinks,     setEmrLinks]     = useState<(EmrLink & { _key: number })[]>([])
-  const [newEmr,       setNewEmr]       = useState({ name:'', url:'' })
-  const [historyModal, setHistoryModal] = useState<{ open:boolean; type: ServiceType|'fee' }>({ open:false, type:'RPM' })
-  const [toast,        setToast]        = useState({ visible:false, message:'', variant:'success' as 'success'|'error' })
+  const page          = useClinicSettingsPage()
+  const { setActions } = useTopNavActions()
 
-  const { clinics }                       = useClinics()
-  const clinic                            = clinics.find(c => c.id === activeId) ?? clinics[0]
-  const { detail, loading, saveEmrLinks, triggerSync } = useClinicSettings(clinic.dbId)
-  const { setActions }                    = useTopNavActions()
-
-  const showToast = useCallback((message: string, variant: 'success'|'error' = 'success') => {
-    setToast({ visible:true, message, variant })
-  }, [])
-
-  // detail 로드되면 EMR 링크 초기화 (클리닉 변경 시에만 초기화)
-  useEffect(() => {
-    if (!detail) return
-    setEmrLinks((detail.emrLinks ?? []).map((e, i) => ({ ...e, _key: i })))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detail?.id])
-
-  // lastSyncedAt 표시 문자열
-  const lastSyncedLabel = detail?.lastSyncedAt
-    ? new Date(detail.lastSyncedAt).toLocaleString('en-US', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false })
-    : 'Not synced'
-
-  const handleSync = useCallback(async () => {
-    setIsSyncing(true)
-    try {
-      await triggerSync()
-      showToast('Sync complete — data updated')
-    } catch {
-      showToast('Sync failed', 'error')
-    } finally {
-      setIsSyncing(false)
-    }
-  }, [triggerSync, showToast])
-
-  // TopNav에 sync 컨트롤 등록
+  // Register sync button in TopNav — UI concern stays in the view layer
   useEffect(() => {
     setActions(
       <button
-        onClick={handleSync}
-        disabled={isSyncing}
+        onClick={page.handleSync}
+        disabled={page.isSyncing}
         className="flex flex-col items-center gap-0.5 group disabled:cursor-not-allowed"
         title="Sync clinic data"
       >
-        {isSyncing
+        {page.isSyncing
           ? <Spinner size="sm" />
           : <span className="material-symbols-outlined text-[22px] text-slate-500 group-hover:text-blue-600 transition-colors group-hover:rotate-180 transition-transform duration-500">sync</span>
         }
         <span className="text-[9px] text-slate-400 group-hover:text-blue-500 transition-colors leading-none">
-          {isSyncing ? 'Syncing…' : lastSyncedLabel.slice(-5)}
+          {page.isSyncing ? 'Syncing…' : page.lastSyncedLabel.slice(-5)}
         </span>
       </button>
     )
     return () => setActions(null)
-  }, [isSyncing, lastSyncedLabel, handleSync, setActions])
-
-  // EMR
-  function addEmr() {
-    if (!newEmr.name || !newEmr.url) { showToast('EMR name and URL are required', 'error'); return }
-    setEmrLinks(prev => [...prev, { ...newEmr, _key: Date.now() }])
-    setNewEmr({ name:'', url:'' })
-  }
-  function removeEmr(key: number) { setEmrLinks(prev => prev.filter(e => e._key !== key)) }
-  async function saveEmr() {
-    try {
-      await saveEmrLinks(emrLinks.map(({ name, url }) => ({ name, url })))
-      showToast('EMR links saved')
-    } catch {
-      showToast('Failed to save EMR links', 'error')
-    }
-  }
-
-  // Revenue Split — 서비스별 최신 기록
-  const splitByType = (svc: ServiceType) =>
-    detail?.revenueSplitHistory.find(s => s.serviceType === svc) ?? null
-
-  // Biller Fee — 최신 기록
-  const currentFee = detail?.billerFeeHistory[0] ?? null
-
-  // History modal 데이터
-  const splitHistoryRows = historyModal.type !== 'fee'
-    ? (detail?.revenueSplitHistory.filter(s => s.serviceType === historyModal.type) ?? [])
-    : []
-  const feeHistoryRows = historyModal.type === 'fee'
-    ? (detail?.billerFeeHistory ?? [])
-    : []
-
-  // 서비스 목록 (DB 기준)
-  const services = detail?.serviceTypes ?? clinic.services
+  }, [page.isSyncing, page.lastSyncedLabel, page.handleSync, setActions])
 
   return (
     <div className="flex flex-1 overflow-hidden h-full">
 
-      {/* ── 좌측: 클리닉 목록 ── */}
-      <ClinicListPanel activeId={activeId} onSelect={id => { setActiveId(id) }} />
+      {/* Clinic list */}
+      <ClinicListPanel activeId={page.activeId} onSelect={page.selectClinic} />
 
-      {/* ── 우측: 클리닉 상세 ── */}
+      {/* Clinic detail */}
       <section className="flex-1 bg-page-bg overflow-y-auto">
         <div className="max-w-3xl mx-auto p-8 space-y-5">
 
-          {/* 클리닉 헤더 */}
+          {/* Clinic header */}
           <Card>
             <CardBody className="flex items-center gap-5">
               <div className="h-14 w-14 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg">
@@ -127,16 +55,16 @@ export function ClinicSettingsPage() {
               </div>
               <div>
                 <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-                  {detail?.name ?? clinic.name}
+                  {page.detail?.name ?? page.clinic.name}
                 </h2>
                 <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                   <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg">
-                    {detail?.code ?? clinic.code}
+                    {page.detail?.code ?? page.clinic.code}
                   </span>
-                  <Badge variant={(detail?.isActive ?? clinic.active) ? 'active' : 'inactive'} dot>
-                    {(detail?.isActive ?? clinic.active) ? 'Active Provider' : 'Inactive'}
+                  <Badge variant={(page.detail?.isActive ?? page.clinic.active) ? 'active' : 'inactive'} dot>
+                    {(page.detail?.isActive ?? page.clinic.active) ? 'Active Provider' : 'Inactive'}
                   </Badge>
-                  {services.map(s => (
+                  {page.services.map(s => (
                     <Badge key={s} variant={s.toLowerCase() as 'rpm'|'ccm'}>{s}</Badge>
                   ))}
                 </div>
@@ -147,19 +75,19 @@ export function ClinicSettingsPage() {
           {/* ① Basic Information */}
           <Card>
             <CardHeader icon="location_on" title="Basic Information" badge={<ReadOnlyBadge />} />
-            {loading && !detail ? (
+            {page.loading && !page.detail ? (
               <CardBody><Spinner size="sm" /></CardBody>
             ) : (
               <CardBody className="grid grid-cols-2 gap-x-8 gap-y-5">
-                <div><FieldLabel>Clinic Name</FieldLabel><FieldValue>{detail?.name ?? '—'}</FieldValue></div>
-                <div><FieldLabel>Clinic Code</FieldLabel><FieldValue mono>{detail?.code ?? '—'}</FieldValue></div>
-                <div><FieldLabel>Contact Name</FieldLabel><FieldValue>{detail?.contactName ?? '—'}</FieldValue></div>
-                <div><FieldLabel>Phone</FieldLabel><FieldValue>{detail?.phone ?? '—'}</FieldValue></div>
-                <div><FieldLabel>Timezone</FieldLabel><FieldValue>{detail?.timezone ?? '—'}</FieldValue></div>
-                <div><FieldLabel>State</FieldLabel><FieldValue>{detail?.state ?? '—'}</FieldValue></div>
+                <div><FieldLabel>Clinic Name</FieldLabel><FieldValue>{page.detail?.name ?? '—'}</FieldValue></div>
+                <div><FieldLabel>Clinic Code</FieldLabel><FieldValue mono>{page.detail?.code ?? '—'}</FieldValue></div>
+                <div><FieldLabel>Contact Name</FieldLabel><FieldValue>{page.detail?.contactName ?? '—'}</FieldValue></div>
+                <div><FieldLabel>Phone</FieldLabel><FieldValue>{page.detail?.phone ?? '—'}</FieldValue></div>
+                <div><FieldLabel>Timezone</FieldLabel><FieldValue>{page.detail?.timezone ?? '—'}</FieldValue></div>
+                <div><FieldLabel>State</FieldLabel><FieldValue>{page.detail?.state ?? '—'}</FieldValue></div>
                 <div className="col-span-2">
                   <FieldLabel>Address</FieldLabel>
-                  <FieldValue>{detail?.address ?? '—'}</FieldValue>
+                  <FieldValue>{page.detail?.address ?? '—'}</FieldValue>
                 </div>
               </CardBody>
             )}
@@ -171,7 +99,7 @@ export function ClinicSettingsPage() {
             <CardBody>
               <div className="flex gap-3 flex-wrap">
                 {(['RPM', 'CCM'] as ServiceType[]).map(svc => {
-                  const isActive = services.includes(svc)
+                  const isActive = page.services.includes(svc)
                   return (
                     <div
                       key={svc}
@@ -198,15 +126,15 @@ export function ClinicSettingsPage() {
             <CardHeader icon="account_balance" title="Revenue Split (Clinic : Hicare)" badge={<ReadOnlyBadge />} />
             <Table>
               <TableHeader columns={[
-                { label:'Service', width:'w-24' },
-                { label:'Split' },
-                { label:'Effective From', width:'w-32' },
-                { label:'', width:'w-28' },
+                { label: 'Service', width: 'w-24' },
+                { label: 'Split' },
+                { label: 'Effective From', width: 'w-32' },
+                { label: '', width: 'w-28' },
               ]} />
               <tbody>
                 {(['RPM','CCM'] as ServiceType[]).map(svc => {
-                  if (!services.includes(svc)) return null
-                  const current = splitByType(svc)
+                  if (!page.services.includes(svc)) return null
+                  const current = page.splitByType(svc)
                   return (
                     <TableRow key={svc}>
                       <TableCell>
@@ -220,15 +148,15 @@ export function ClinicSettingsPage() {
                               <Badge variant="ccm">Hicare {current.hicarePct}%</Badge>
                             </div>
                             <div className="mt-2 h-1.5 w-36 bg-slate-100 rounded-full overflow-hidden flex">
-                              <div className="h-full bg-primary" style={{ width:`${current.clinicPct}%` }} />
-                              <div className="h-full bg-blue-200" style={{ width:`${current.hicarePct}%` }} />
+                              <div className="h-full bg-primary" style={{ width: `${current.clinicPct}%` }} />
+                              <div className="h-full bg-blue-200" style={{ width: `${current.hicarePct}%` }} />
                             </div>
                           </>
                         ) : <span className="text-slate-400 text-sm">—</span>}
                       </TableCell>
                       <TableCell mono muted>{current?.effectiveFrom ?? '—'}</TableCell>
                       <TableCell align="right">
-                        <Button variant="ghost" size="sm" onClick={() => setHistoryModal({ open:true, type:svc })}>
+                        <Button variant="ghost" size="sm" onClick={() => page.openSplitHistory(svc)}>
                           View history
                         </Button>
                       </TableCell>
@@ -243,32 +171,32 @@ export function ClinicSettingsPage() {
           <Card>
             <CardHeader icon="receipt" title="Biller Fee" badge={<ReadOnlyBadge />} />
             <CardBody>
-              {currentFee ? (
+              {page.currentFee ? (
                 <>
                   <div className="grid grid-cols-3 gap-8 items-end">
                     <div>
                       <FieldLabel>Fee Type</FieldLabel>
-                      <FieldValue>{currentFee.feeType === 'pct' ? 'Percentage (%)' : 'Fixed ($/mo)'}</FieldValue>
+                      <FieldValue>{page.currentFee.feeType === 'pct' ? 'Percentage (%)' : 'Fixed ($/mo)'}</FieldValue>
                     </div>
                     <div>
                       <FieldLabel>Fee Value</FieldLabel>
                       <p className="text-2xl font-extrabold text-slate-900 mt-1">
-                        {currentFee.feeType === 'pct'
-                          ? `${Math.abs(currentFee.feeValue)}%`
-                          : `$${Math.abs(currentFee.feeValue)}/mo`}
+                        {page.currentFee.feeType === 'pct'
+                          ? `${Math.abs(page.currentFee.feeValue)}%`
+                          : `$${Math.abs(page.currentFee.feeValue)}/mo`}
                       </p>
                     </div>
-                    <div><FieldLabel>Effective From</FieldLabel><FieldValue mono>{currentFee.effectiveFrom}</FieldValue></div>
+                    <div><FieldLabel>Effective From</FieldLabel><FieldValue mono>{page.currentFee.effectiveFrom}</FieldValue></div>
                   </div>
-                  {currentFee.note && (
-                    <p className="mt-3 text-[11px] text-slate-500 bg-slate-50 rounded-lg p-3">{currentFee.note}</p>
+                  {page.currentFee.note && (
+                    <p className="mt-3 text-[11px] text-slate-500 bg-slate-50 rounded-lg p-3">{page.currentFee.note}</p>
                   )}
                 </>
               ) : (
                 <span className="text-slate-400 text-sm">—</span>
               )}
               <div className="mt-4 flex justify-end">
-                <Button variant="ghost" size="sm" onClick={() => setHistoryModal({ open:true, type:'fee' })}>
+                <Button variant="ghost" size="sm" onClick={page.openFeeHistory}>
                   View history
                 </Button>
               </div>
@@ -289,23 +217,21 @@ export function ClinicSettingsPage() {
             />
             <CardBody>
               <div className="space-y-2 mb-4">
-                {emrLinks.map(emr => (
+                {page.emrLinks.map(emr => (
                   <div key={emr._key} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg group">
                     <span className="material-symbols-outlined text-slate-400 text-sm flex-shrink-0">link</span>
                     <span className="w-28 text-sm font-semibold text-slate-700 flex-shrink-0">{emr.name}</span>
                     <input
                       className="flex-1 text-xs font-mono bg-transparent border-none outline-none text-primary focus:bg-white focus:px-2 focus:border focus:border-blue-300 focus:rounded transition-all"
                       value={emr.url}
-                      onChange={e => setEmrLinks(prev =>
-                        prev.map(l => l._key === emr._key ? { ...l, url: e.target.value } : l)
-                      )}
+                      onChange={e => page.updateEmrUrl(emr._key, e.target.value)}
                     />
                     <Button variant="ghost" size="sm" iconOnly className="opacity-0 group-hover:opacity-100"
                       onClick={() => window.open(emr.url, '_blank')}>
                       <span className="material-symbols-outlined text-sm">open_in_new</span>
                     </Button>
                     <Button variant="ghost" size="sm" iconOnly className="opacity-0 group-hover:opacity-100 hover:text-error"
-                      onClick={() => removeEmr(emr._key)}>
+                      onClick={() => page.removeEmr(emr._key)}>
                       <span className="material-symbols-outlined text-sm">close</span>
                     </Button>
                   </div>
@@ -313,20 +239,24 @@ export function ClinicSettingsPage() {
               </div>
 
               <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
-                <TextInput className="w-32" placeholder="EMR name"
-                  value={newEmr.name} onChange={e => setNewEmr(p => ({ ...p, name: e.target.value }))} />
-                <TextInput className="flex-1" placeholder="https://..."
-                  value={newEmr.url} onChange={e => setNewEmr(p => ({ ...p, url: e.target.value }))} />
-                <Button variant="secondary" leftIcon={<span className="material-symbols-outlined text-sm">add</span>} onClick={addEmr}>
+                <TextInput
+                  className="w-32" placeholder="EMR name"
+                  value={page.newEmr.name}
+                  onChange={e => page.updateNewEmr('name', e.target.value)}
+                />
+                <TextInput
+                  className="flex-1" placeholder="https://..."
+                  value={page.newEmr.url}
+                  onChange={e => page.updateNewEmr('url', e.target.value)}
+                />
+                <Button variant="secondary" leftIcon={<span className="material-symbols-outlined text-sm">add</span>} onClick={page.addEmr}>
                   Add EMR
                 </Button>
               </div>
 
               <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
-                <Button variant="ghost" onClick={() => {
-                  setEmrLinks((detail?.emrLinks ?? []).map((e, i) => ({ ...e, _key: i })))
-                }}>Cancel</Button>
-                <Button variant="primary" onClick={saveEmr}>Save EMR links</Button>
+                <Button variant="ghost" onClick={page.resetEmrLinks}>Cancel</Button>
+                <Button variant="primary" onClick={page.saveEmr}>Save EMR links</Button>
               </div>
             </CardBody>
           </Card>
@@ -334,18 +264,18 @@ export function ClinicSettingsPage() {
         </div>
       </section>
 
-      {/* ── History Modal ── */}
+      {/* History Modal */}
       <Modal
-        open={historyModal.open}
-        onClose={() => setHistoryModal(p => ({ ...p, open:false }))}
-        title={historyModal.type === 'fee' ? 'Biller Fee History' : `${historyModal.type} Split History`}
+        open={page.historyModal.open}
+        onClose={page.closeHistoryModal}
+        title={page.historyModal.type === 'fee' ? 'Biller Fee History' : `${page.historyModal.type} Split History`}
         subtitle="변경 이력 (소급 적용 없음)"
       >
         <div className="space-y-3">
-          {historyModal.type === 'fee'
-            ? feeHistoryRows.map((row, idx) => (
+          {page.historyModal.type === 'fee'
+            ? page.feeHistoryRows.map((row: FeeRecord, idx: number) => (
                 <HistoryItem key={row.id} isCurrent={idx === 0}
-                  period={feePeriodLabel(feeHistoryRows, idx)}
+                  period={feePeriodLabel(page.feeHistoryRows, idx)}
                   changedAt={new Date(row.changedAt).toLocaleDateString()}
                   detail={
                     <span className="text-sm font-bold text-slate-800">
@@ -358,9 +288,9 @@ export function ClinicSettingsPage() {
                   }
                 />
               ))
-            : splitHistoryRows.map((row, idx) => (
+            : page.splitHistoryRows.map((row: SplitRecord, idx: number) => (
                 <HistoryItem key={row.id} isCurrent={idx === 0}
-                  period={splitPeriodLabel(splitHistoryRows, idx)}
+                  period={splitPeriodLabel(page.splitHistoryRows, idx)}
                   changedAt={new Date(row.changedAt).toLocaleDateString()}
                   detail={
                     <>
@@ -371,24 +301,24 @@ export function ClinicSettingsPage() {
                 />
               ))
           }
-          {(historyModal.type === 'fee' ? feeHistoryRows : splitHistoryRows).length === 0 && (
+          {(page.historyModal.type === 'fee' ? page.feeHistoryRows : page.splitHistoryRows).length === 0 && (
             <p className="text-sm text-slate-400 text-center py-4">이력 없음</p>
           )}
         </div>
       </Modal>
 
-      {/* ── Toast ── */}
+      {/* Toast */}
       <Toast
-        visible={toast.visible}
-        message={toast.message}
-        variant={toast.variant}
-        onClose={() => setToast(p => ({ ...p, visible:false }))}
+        visible={page.toast.visible}
+        message={page.toast.message}
+        variant={page.toast.variant}
+        onClose={page.closeToast}
       />
     </div>
   )
 }
 
-// ── 하위 컴포넌트 ────────────────────────────────────────────
+// ── Pure UI sub-components ────────────────────────────────────
 
 function ReadOnlyBadge() {
   return (
@@ -403,7 +333,7 @@ function HistoryItem({ isCurrent, period, changedAt, detail }: {
   isCurrent: boolean
   period:    string
   changedAt: string
-  detail:    React.ReactNode
+  detail:    ReactNode
 }) {
   return (
     <div className={`flex gap-3 p-3 rounded-lg ${isCurrent ? 'bg-blue-50/60 border border-blue-100' : 'bg-slate-50'}`}>
