@@ -29,7 +29,10 @@ export class RevenueSplitService {
     });
   }
 
-  create(clinicId: string, dto: CreateRevenueSplitDto): Promise<RevenueSplitHistory> {
+  create(
+    clinicId: string,
+    dto: CreateRevenueSplitDto,
+  ): Promise<RevenueSplitHistory> {
     return this.repo.save(this.repo.create({ ...dto, clinicId }));
   }
 }

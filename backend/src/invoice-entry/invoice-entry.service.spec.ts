@@ -113,7 +113,12 @@ describe('InvoiceEntryService', () => {
       });
 
       expect(mockRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ clinicId: 'clinic-1', billingYear: 2025, billingMonth: 4, status: 'unpaid' }),
+        expect.objectContaining({
+          clinicId: 'clinic-1',
+          billingYear: 2025,
+          billingMonth: 4,
+          status: 'unpaid',
+        }),
       );
       expect(mockRepo.save).toHaveBeenCalled();
     });
@@ -123,7 +128,11 @@ describe('InvoiceEntryService', () => {
     it('updates CI fields on existing entry', async () => {
       const entry = mockEntry();
       mockRepo.findOne.mockResolvedValue(entry);
-      mockRepo.save.mockResolvedValue({ ...entry, ciAmount: 750, status: 'paid' });
+      mockRepo.save.mockResolvedValue({
+        ...entry,
+        ciAmount: 750,
+        status: 'paid',
+      });
 
       const result = await service.saveCi('entry-1', {
         ciAmount: 750,
@@ -139,7 +148,9 @@ describe('InvoiceEntryService', () => {
 
     it('throws NotFoundException when entry not found', async () => {
       mockRepo.findOne.mockResolvedValue(null);
-      await expect(service.saveCi('missing-id', { ciAmount: 100 })).rejects.toThrow(NotFoundException);
+      await expect(
+        service.saveCi('missing-id', { ciAmount: 100 }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -155,7 +166,9 @@ describe('InvoiceEntryService', () => {
 
     it('throws NotFoundException when entry not found', async () => {
       mockRepo.findOne.mockResolvedValue(null);
-      await expect(service.updateStatus('missing-id', 'paid')).rejects.toThrow(NotFoundException);
+      await expect(service.updateStatus('missing-id', 'paid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });
